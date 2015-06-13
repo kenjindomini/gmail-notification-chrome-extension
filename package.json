@@ -1,0 +1,13 @@
+{
+  "name": "gmaildesktopnotification",
+  "version": "0.0.1",
+  "description": "Chrome Extension for popping up an OS notification when a new email is received to Gmail.",
+  "author": "Keith Olenchak",
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "mocha": "^2.2.5",
+    "chai": "^3.0.0"
+  }
+}
