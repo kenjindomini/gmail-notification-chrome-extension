@@ -9,6 +9,14 @@
     "scripts": ["eventPage.js"],
     "persistent": false
     },
+    "browser_action": {
+          "default_icon": {
+            "19": "images/gmail24.png",
+            "38": "images/gmail48.png"
+          },
+          "default_title": "Gmail Notifications",
+          "default_popup": "popup.html"
+        },
 	"oauth2": {
 	"client_id": "107921446115-71iua4ttnpqf3l2ud11egvrnc6t3od7p.apps.googleusercontent.com",
 	"scopes": [

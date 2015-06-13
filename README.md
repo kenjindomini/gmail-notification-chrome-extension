@@ -1,0 +1,1 @@
+Chrome extension that will pop up an OS notification when a new gmail message is received.
