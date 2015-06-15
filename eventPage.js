@@ -1,9 +1,11 @@
+window.addEventListener("beforeunload", cleanUp, false);
 if (typeof document != 'undefined'){
 	var head = document.getElementsByTagName('head')[0];
 	var script = document.createElement('script');
 	script.type = 'text/javascript';
 	script.src = "https://apis.google.com/js/client.js";
 	head.appendChild(script);
+	//TODO: move to own function called by button on popup.html.
 	//oauth2 auth
 	chrome.identity.getAuthToken(
 		{'interactive': true},
@@ -68,6 +70,17 @@ function gmailAPILoaded(){
     	'userId': 'me',
     	'Request body': {
     		"topicName": topicName
+    		//A list of labelIds should be provided to api to restrict notifications. list should be configured via popup.html.
     	}
     });
+    //poll topic every 30 seconds.
+    window.setInterval(function(){pullNotifications();}, 30000); //TODO: make timer configurable via popup.html.
+}
+
+function pullNotifications() {
+	//TODO: add polling code
+}
+
+function cleanUp(e) {
+	//TODO: Add code to clean up topics,mailbox watch, etc.
 }
