@@ -1,14 +1,14 @@
 window.addEventListener("beforeunload", cleanUp, false);
 chrome.runtime.onMessage.addListener(messageHandler(request, sender, sendResponse));
 var CONFIGURATION = {
-    'pullInterval': 30000, //TODO: make timer configurable via popup.html.
-    'monitorLabels': [
+    pullInterval: 30000,
+    monitorLabels: [
         'CATEGORY_PERSONAL',
         'CATEGORY_SOCIAL',
         'CATEGORY_FORUMS',
         'CATEGORY_UPDATES'
-        ] //list should be configured via popup.html.
-}
+        ]
+};
 if (typeof document != 'undefined'){
 	var head = document.getElementsByTagName('head')[0];
 	var script = document.createElement('script');
@@ -123,8 +123,11 @@ function messageHandler(request, sender, sendResponse) {
         setConfig(request.config);
         sendResponse({action: request.action, status: "completed"});
     }
+    if (request.action == "getConfig") {
+        sendResponse({action: request.action, status: "completed", config: CONFIGURATION});
+    }
     if (request.action == "getLabels") {
-        var labelList = setLabels();
+        var labelList = getLabels();
         sendResponse({action: request.action, status: "completed", labels: labelList});
     }
     if (request.action == "authenticate") {
