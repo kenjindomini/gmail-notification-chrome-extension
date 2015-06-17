@@ -1,6 +1,6 @@
-var expect = require('chai').expect;
-var assert = require('chai').assert;
-var eventPage = require("../eventPage.js");
+//var expect = require('chai').expect;
+//var assert = require('chai').assert;
+//var eventPage = require("../eventPage.js");
 
 describe("eventPage", function(){
     describe("authorize", function() {

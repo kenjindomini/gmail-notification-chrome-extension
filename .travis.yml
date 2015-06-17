@@ -9,5 +9,14 @@ notifications:
     on_success: always
     on_failure: always
 
+before_install:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+
+addons:
+  sauce_connect:
+    username: "kenjindomini"
+    access_key: "e1e2017a-d008-4421-8316-bd2bdb6103d3"
+
 script:
   - "npm run test"
