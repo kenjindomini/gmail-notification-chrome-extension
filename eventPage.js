@@ -154,13 +154,19 @@ function messageHandler(request, sender, sendResponse) {
             sendResponse({action: request.action, status: "completed", labels: labelList});
             break;
         case "authenticate":
-            authenticate(); 
-            sendResponse({action: request.action, status: "completed"});
+            authenticate();
+            if (authenticated == true) {
+                sendResponse({action: request.action, status: "completed"});
+            }
+            else {
+                sendResponse({action: request.action, status: "failed"});
+            }
             break;
         case "getAuthStatus":
-            sendResponse({action: request.action, status: "completed", authStatus: authenticated})
+            sendResponse({action: request.action, status: "completed", authStatus: authenticated});
             break;
         default:
+            sendResponse({action: request.action, status: "Invalid request"});
             console.log("Unknown request <" + action + ">");
             break;
     }

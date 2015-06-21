@@ -3,13 +3,17 @@
     <head>
         <script type="text/javascript" src="popup.js"></script>
         <script type="text/javascript">
+            getConfig();
             getLabels();
+            createLabelList();
         </script>
     </head>
     <body>
+        <div id="authorize" name="authorize">
+        </div>
         <p>Poll gmail interval(seconds): <input type="text" name="pullInterval" id="pullInterval" /></p>
         <div id="labelList" name="labelList">
-            
         </div>
+        <input type="button" name="submitConfig" value="Submit" onclick="setConfig()"/>
     </body>
 </html>
