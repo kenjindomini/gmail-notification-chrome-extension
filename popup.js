@@ -8,6 +8,7 @@ var CONFIGURATION = {
         ]
 };
 var labelList;
+
 function getLabels() {
     chrome.runtime.sendMessage({action: "getLabels"}, function(response){
         labelList = response.labels;
@@ -23,5 +24,9 @@ function getConfig() {
 }
 
 function setConfig() {
+    
+}
+
+function createLabelList() {
     
 }

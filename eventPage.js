@@ -1,5 +1,6 @@
 window.addEventListener("beforeunload", cleanUp, false);
 chrome.runtime.onMessage.addListener(messageHandler(request, sender, sendResponse));
+var authenticated = false;
 var CONFIGURATION = {
     pullInterval: 30000,
     monitorLabels: [
@@ -22,13 +23,17 @@ function authenticate() {
 	chrome.identity.getAuthToken(
 		{'interactive': true
 		},
-		function(){
-		    authorize();
+		function(token){
+		    if (typeof token != 'undefined') {
+		        authenticated = true;
+		        loadApi();
+		    }
 		}
 	);
 }
+
 function authorize(){
-	gapi.auth.authorize(
+/*	gapi.auth.authorize(
 		{
 			client_id: '107921446115-71iua4ttnpqf3l2ud11egvrnc6t3od7p.apps.googleusercontent.com',
 			immediate: true,
@@ -41,9 +46,25 @@ function authorize(){
 			gapi.client.load('pubsub', 'v1beta2', null);
 			gapi.client.load('gmail', 'v1', gmailAPILoaded);
 		}
+	);*/
+	//oauth2 auth
+	chrome.identity.getAuthToken(
+		{'interactive': false
+		},
+		function(token){
+		    if (typeof token != 'undefined') {
+		        authenticated = true;
+		        loadApi();
+		    }
+		}
 	);
 }
- 
+
+function loadApi() {
+    gapi.client.load('pubsub', 'v1beta2', null);
+	gapi.client.load('gmail', 'v1', gmailAPILoaded);
+}
+
 function gmailAPILoaded(){
     console.log("gmail api loaded.")
     //get user email address and strip out the '@' to create a unique topic name.
@@ -119,20 +140,29 @@ function getLabels() {
 }
 
 function messageHandler(request, sender, sendResponse) {
-    if (request.action == "setConfig") {
-        setConfig(request.config);
-        sendResponse({action: request.action, status: "completed"});
-    }
-    if (request.action == "getConfig") {
-        sendResponse({action: request.action, status: "completed", config: CONFIGURATION});
-    }
-    if (request.action == "getLabels") {
-        var labelList = getLabels();
-        sendResponse({action: request.action, status: "completed", labels: labelList});
-    }
-    if (request.action == "authenticate") {
-        authenticate();
-        sendResponse({action: request.action, status: "completed"});
+    var action = request.action;
+    switch (action) {
+        case "setConfig":
+            setConfig(request.config);
+            sendResponse({action: request.action, status: "completed"});
+            break;
+        case "getConfig":
+           sendResponse({action: request.action, status: "completed", config: CONFIGURATION});
+            break;
+        case "getLabels":
+            var labelList = getLabels();
+            sendResponse({action: request.action, status: "completed", labels: labelList});
+            break;
+        case "authenticate":
+            authenticate(); 
+            sendResponse({action: request.action, status: "completed"});
+            break;
+        case "getAuthStatus":
+            sendResponse({action: request.action, status: "completed", authStatus: authenticated})
+            break;
+        default:
+            console.log("Unknown request <" + action + ">");
+            break;
     }
 }
 
