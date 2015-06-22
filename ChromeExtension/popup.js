@@ -9,6 +9,16 @@ var CONFIGURATION = {
 };
 var labelList;
 
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelector('#submitConfig').addEventListener('click', setConfig);
+    var authStatus = getAuthStatus();
+    getConfig();
+    if(authStatus == true) {
+    getLabels();
+    createLabelList();
+    }
+});
+
 function getLabels() {
     chrome.runtime.sendMessage({action: "getLabels"}, function(response){
         labelList = response.labels;
@@ -22,6 +32,8 @@ function authorize() {
             while (authorizeDiv.firstChild) {
                 authorizeDiv.removeChild(authorizeDiv.firstChild);
             }
+            getLabels();
+            createLabelList();
         } 
         else {
             var authorizeText = document.getElementById("authorizeText");
@@ -49,6 +61,7 @@ function getAuthStatus() {
         if(response.authStatus == false) {
             createAuthorizeButton();
         }
+        return response.authStatus;
     });
 }
 
@@ -77,7 +90,7 @@ function createAuthorizeButton() {
     authorizeButton.name = "authorizeButton";
     authorizeButton.type = "button";
     authorizeButton.value = "Authorize";
-    authorizeButton.onclick = "authorize()";
     authorizeDiv.appendChild(authorizeText);
     authorizeDiv.appendChild(authorizeButton);
+    document.querySelector('#authorizeButton').addEventListener('click', authorize);
 }

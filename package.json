@@ -9,6 +9,7 @@
   "devDependencies": {
     "mocha": "*",
     "chai": "*",
-    "sinon": ""
+    "sinon": "*",
+    "selenium-webdriver": "*"
   }
 }

@@ -1,5 +1,5 @@
 window.addEventListener("beforeunload", cleanUp, false);
-chrome.runtime.onMessage.addListener(messageHandler(request, sender, sendResponse));
+chrome.runtime.onMessage.addListener(messageHandler);
 var authenticated = false;
 var CONFIGURATION = {
     pullInterval: 30000,
@@ -17,6 +17,8 @@ if (typeof document != 'undefined'){
 	script.src = "https://apis.google.com/js/client.js";
 	head.appendChild(script);
 }
+//Try to authenticate with a cached token.
+authorize();
 
 function authenticate() {
     //oauth2 auth
@@ -33,20 +35,6 @@ function authenticate() {
 }
 
 function authorize(){
-/*	gapi.auth.authorize(
-		{
-			client_id: '107921446115-71iua4ttnpqf3l2ud11egvrnc6t3od7p.apps.googleusercontent.com',
-			immediate: true,
-			scopes: [
-      			"https://www.googleapis.com/auth/gmail.readonly",
-      			"https://www.googleapis.com/auth/pubsub"
-    		]
-		},
-		function(){
-			gapi.client.load('pubsub', 'v1beta2', null);
-			gapi.client.load('gmail', 'v1', gmailAPILoaded);
-		}
-	);*/
 	//oauth2 auth
 	chrome.identity.getAuthToken(
 		{'interactive': false
