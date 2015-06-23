@@ -1,5 +1,4 @@
-window.addEventListener("beforeunload", cleanUp, false);
-chrome.runtime.onMessage.addListener(messageHandler);
+/* chrome.storage.sync contins the following values by default:
 var authenticated = false;
 var CONFIGURATION = {
     pullInterval: 30000,
@@ -10,17 +9,41 @@ var CONFIGURATION = {
         'CATEGORY_UPDATES'
         ]
 };
-if (typeof document != 'undefined'){
+*/
+chrome.runtime.onInstalled.addListener(function(details){
+    setDefaults();
+})
+window.addEventListener("beforeunload", cleanUp, false);
+chrome.runtime.onMessage.addListener(messageHandler);
+chrome.runtime.onStartup.addListener(function(){
+    if (typeof document != 'undefined'){
 	var head = document.getElementsByTagName('head')[0];
 	var script = document.createElement('script');
 	script.type = 'text/javascript';
 	script.src = "https://apis.google.com/js/client.js";
 	head.appendChild(script);
+    }
+    chrome.storage.sync.set({'authenticated': false}, null);
+    //Try to authenticate with a cached token.
+    authorize();
+});
+    
+function setDefaults() {
+    chrome.storage.sync.set({'authenticated': false,
+        'CONFIGURATION': {
+            'pullInterval': 30000,
+            'monitorLabels': [
+                'CATEGORY_PERSONAL',
+            'CATEGORY_SOCIAL',
+            'CATEGORY_FORUMS',
+            'CATEGORY_UPDATES'
+            ]
+        }
+    }, null);
 }
-//Try to authenticate with a cached token.
-authorize();
 
 function authenticate() {
+    var authenticated = chrome.storage.sync.get('authenticated', null);
     //oauth2 auth
 	chrome.identity.getAuthToken(
 		{'interactive': true
@@ -35,6 +58,7 @@ function authenticate() {
 }
 
 function authorize(){
+    var authenticated = chrome.storage.sync.get('authenticated', null);
 	//oauth2 auth
 	chrome.identity.getAuthToken(
 		{'interactive': false
@@ -92,6 +116,7 @@ function gmailAPILoaded(){
     	}
     });
     //Tell api to publish notifications of new gmail messages to topic.
+    var CONFIGURATION = chrome.storage.sync.get('CONFIGURATION', null);
     var watchResponse;
     gapi.client.gmail.users.watch({
     	'userId': 'me',
@@ -135,7 +160,8 @@ function messageHandler(request, sender, sendResponse) {
             sendResponse({action: request.action, status: "completed"});
             break;
         case "getConfig":
-           sendResponse({action: request.action, status: "completed", config: CONFIGURATION});
+            var CONFIGURATION = chrome.storage.sync.get('CONFIGURATION', null);
+            sendResponse({action: request.action, status: "completed", config: CONFIGURATION});
             break;
         case "getLabels":
             var labelList = getLabels();
@@ -151,6 +177,7 @@ function messageHandler(request, sender, sendResponse) {
             }
             break;
         case "getAuthStatus":
+            var authenticated = chrome.storage.sync.get('authenticated', null);
             sendResponse({action: request.action, status: "completed", authStatus: authenticated});
             break;
         default:
@@ -162,9 +189,9 @@ function messageHandler(request, sender, sendResponse) {
 
 function setConfig(config) {
     if (typeof config.pullInterval != 'undefined') {
-        CONFIGURATION.pullInterval = config.pullInterval;
+        chrome.storage.sync.set({'CONFIGURATION.pullInterval': config.pullInterval}, null);
     }
     if (typeof config.monitorLabels != 'undefined') {
-        CONFIGURATION.monitorLabels = config.monitorLabels;
+        chrome.storage.sync.set({'CONFIGURATION.monitorLabels': config.monitorLabels}, null);
     }
 }
