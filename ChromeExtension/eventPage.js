@@ -15,6 +15,7 @@ chrome.runtime.onInstalled.addListener(function(details){
 });
 window.addEventListener("beforeunload", cleanUp, false);
 chrome.runtime.onMessage.addListener(messageHandler);
+chrome.storage.onChanged.addListener(storageOnChangeHandler)
 chrome.runtime.onStartup.addListener(function(){
     if (typeof document != 'undefined'){
 	var head = document.getElementsByTagName('head')[0];
@@ -187,6 +188,17 @@ function messageHandler(request, sender, sendResponse) {
             sendResponse({action: request.action, status: "Invalid request"});
             console.log("Unknown request <" + action + ">");
             break;
+    }
+}
+
+function storageOnChangeHandler(changes, areaName) {
+    if (areaName != "sync") {
+        return;
+    }
+    if (typeof changes.authenticated != 'undefined') {
+        if (changes.authenticated.newValue == true && chrome.browserAction.getBadgeText() == '!') {
+            chrome.browserAction.setBadgeText('');
+        }
     }
 }
 
