@@ -12,7 +12,7 @@ var CONFIGURATION = {
 */
 chrome.runtime.onInstalled.addListener(function(details){
     setDefaults();
-})
+});
 window.addEventListener("beforeunload", cleanUp, false);
 chrome.runtime.onMessage.addListener(messageHandler);
 chrome.runtime.onStartup.addListener(function(){
@@ -26,6 +26,9 @@ chrome.runtime.onStartup.addListener(function(){
     chrome.storage.sync.set({'authenticated': false}, null);
     //Try to authenticate with a cached token.
     authorize();
+    if (chrome.storage.sync.get('authenticated') == false) {
+        chrome.browserAction.setBadgeText({text: '!'});
+    }
 });
     
 function setDefaults() {
@@ -34,9 +37,9 @@ function setDefaults() {
             'pullInterval': 30000,
             'monitorLabels': [
                 'CATEGORY_PERSONAL',
-            'CATEGORY_SOCIAL',
-            'CATEGORY_FORUMS',
-            'CATEGORY_UPDATES'
+                'CATEGORY_SOCIAL',
+                'CATEGORY_FORUMS',
+                'CATEGORY_UPDATES'
             ]
         }
     }, null);
@@ -50,7 +53,7 @@ function authenticate() {
 		},
 		function(token){
 		    if (typeof token != 'undefined') {
-		        authenticated = true;
+		        chrome.storage.sync.set({'authenticated': true}, null);
 		        loadApi();
 		    }
 		}
@@ -65,7 +68,7 @@ function authorize(){
 		},
 		function(token){
 		    if (typeof token != 'undefined') {
-		        authenticated = true;
+		        chrome.storage.sync.set({'authenticated': true}, null)
 		        loadApi();
 		    }
 		}
