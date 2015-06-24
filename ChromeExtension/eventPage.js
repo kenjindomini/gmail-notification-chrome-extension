@@ -1,4 +1,4 @@
-/* chrome.storage.sync contins the following values by default:
+//Set default values.
 var authenticated = false;
 var CONFIGURATION = {
     pullInterval: 30000,
@@ -9,10 +9,7 @@ var CONFIGURATION = {
         'CATEGORY_UPDATES'
         ]
 };
-*/
-chrome.runtime.onInstalled.addListener(function(details){
-    setDefaults();
-});
+
 window.addEventListener("beforeunload", cleanUp, false);
 chrome.runtime.onMessage.addListener(messageHandler);
 chrome.storage.onChanged.addListener(storageOnChangeHandler)
@@ -24,37 +21,28 @@ chrome.runtime.onStartup.addListener(function(){
 	script.src = "https://apis.google.com/js/client.js";
 	head.appendChild(script);
     }
-    chrome.storage.sync.set({'authenticated': false}, null);
+    syncStorage();
     //Try to authenticate with a cached token.
     authorize();
-    if (chrome.storage.sync.get('authenticated') == false) {
+    if (authenticated == false) {
         chrome.browserAction.setBadgeText({text: '!'});
     }
 });
     
-function setDefaults() {
-    chrome.storage.sync.set({'authenticated': false,
-        'CONFIGURATION': {
-            'pullInterval': 30000,
-            'monitorLabels': [
-                'CATEGORY_PERSONAL',
-                'CATEGORY_SOCIAL',
-                'CATEGORY_FORUMS',
-                'CATEGORY_UPDATES'
-            ]
-        }
-    }, null);
+function syncStorage() {
+    chrome.storage.sync.get('CONFIGURATION', function(items) {
+        CONFIGURATION = items.CONFIGURATION;
+    });
 }
 
 function authenticate() {
-    var authenticated = chrome.storage.sync.get('authenticated', null);
     //oauth2 auth
 	chrome.identity.getAuthToken(
 		{'interactive': true
 		},
 		function(token){
 		    if (typeof token != 'undefined') {
-		        chrome.storage.sync.set({'authenticated': true}, null);
+		        chrome.storage.sync.set({'authenticated': true});
 		        loadApi();
 		    }
 		}
@@ -62,14 +50,13 @@ function authenticate() {
 }
 
 function authorize(){
-    var authenticated = chrome.storage.sync.get('authenticated', null);
 	//oauth2 auth
 	chrome.identity.getAuthToken(
 		{'interactive': false
 		},
 		function(token){
 		    if (typeof token != 'undefined') {
-		        chrome.storage.sync.set({'authenticated': true}, null)
+		        chrome.storage.sync.set({'authenticated': true})
 		        loadApi();
 		    }
 		}
@@ -120,7 +107,6 @@ function gmailAPILoaded(){
     	}
     });
     //Tell api to publish notifications of new gmail messages to topic.
-    var CONFIGURATION = chrome.storage.sync.get('CONFIGURATION', null);
     var watchResponse;
     gapi.client.gmail.users.watch({
     	'userId': 'me',
@@ -164,7 +150,6 @@ function messageHandler(request, sender, sendResponse) {
             sendResponse({action: request.action, status: "completed"});
             break;
         case "getConfig":
-            var CONFIGURATION = chrome.storage.sync.get('CONFIGURATION', null);
             sendResponse({action: request.action, status: "completed", config: CONFIGURATION});
             break;
         case "getLabels":
@@ -181,7 +166,6 @@ function messageHandler(request, sender, sendResponse) {
             }
             break;
         case "getAuthStatus":
-            var authenticated = chrome.storage.sync.get('authenticated', null);
             sendResponse({action: request.action, status: "completed", authStatus: authenticated});
             break;
         default:
@@ -196,17 +180,21 @@ function storageOnChangeHandler(changes, areaName) {
         return;
     }
     if (typeof changes.authenticated != 'undefined') {
+        authenticated = changes.authenticated.newValue;
         if (changes.authenticated.newValue == true && chrome.browserAction.getBadgeText() == '!') {
             chrome.browserAction.setBadgeText('');
         }
+    }
+    if (typeof changes.CONFIGURATION != 'undefined') {
+        CONFIGURATION = changes.CONFIGURATION.newValue;
     }
 }
 
 function setConfig(config) {
     if (typeof config.pullInterval != 'undefined') {
-        chrome.storage.sync.set({'CONFIGURATION.pullInterval': config.pullInterval}, null);
+        chrome.storage.sync.set({'CONFIGURATION.pullInterval': config.pullInterval});
     }
     if (typeof config.monitorLabels != 'undefined') {
-        chrome.storage.sync.set({'CONFIGURATION.monitorLabels': config.monitorLabels}, null);
+        chrome.storage.sync.set({'CONFIGURATION.monitorLabels': config.monitorLabels});
     }
 }
