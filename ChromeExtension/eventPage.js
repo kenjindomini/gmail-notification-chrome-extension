@@ -18,24 +18,32 @@ chrome.runtime.onStartup.addListener(function(){
 	var head = document.getElementsByTagName('head')[0];
 	var script = document.createElement('script');
 	script.type = 'text/javascript';
-	script.src = "https://apis.google.com/js/client.js";
+	script.src = "https://apis.google.com/js/client.js?onload=init()";
 	head.appendChild(script);
     }
+});
+
+function init() {
     syncStorage();
     //Try to authenticate with a cached token.
     authorize();
     if (authenticated == false) {
         chrome.browserAction.setBadgeText({text: '!'});
     }
-});
-    
+}
+
 function syncStorage() {
     chrome.storage.sync.get('CONFIGURATION', function(items) {
+        if (typeof items != 'undefined') {
         CONFIGURATION = items.CONFIGURATION;
+        }
+        else {
+            chrome.storage.sync.set({'CONFIGURATION': CONFIGURATION});
+        }
     });
 }
 
-function authenticate() {
+function authenticate(request, sendResponse) {
     //oauth2 auth
 	chrome.identity.getAuthToken(
 		{'interactive': true
@@ -43,8 +51,12 @@ function authenticate() {
 		function(token){
 		    if (typeof token != 'undefined') {
 		        chrome.storage.sync.set({'authenticated': true});
+		        sendResponse({action: request.action, status: "completed"});
 		        loadApi();
 		    }
+            else {
+                sendResponse({action: request.action, status: "failed"});
+            }
 		}
 	);
 }
@@ -157,13 +169,7 @@ function messageHandler(request, sender, sendResponse) {
             sendResponse({action: request.action, status: "completed", labels: labelList});
             break;
         case "authenticate":
-            authenticate();
-            if (authenticated == true) {
-                sendResponse({action: request.action, status: "completed"});
-            }
-            else {
-                sendResponse({action: request.action, status: "failed"});
-            }
+            authenticate(request, sendResponse);
             break;
         case "getAuthStatus":
             sendResponse({action: request.action, status: "completed", authStatus: authenticated});
@@ -181,7 +187,9 @@ function storageOnChangeHandler(changes, areaName) {
     }
     if (typeof changes.authenticated != 'undefined') {
         authenticated = changes.authenticated.newValue;
-        if (changes.authenticated.newValue == true && chrome.browserAction.getBadgeText() == '!') {
+        var badgeText;
+        chrome.browserAction.getBadgeText({}, function(result){badgeText=result;});
+        if (changes.authenticated.newValue == true && badgeText == '!') {
             chrome.browserAction.setBadgeText('');
         }
     }
