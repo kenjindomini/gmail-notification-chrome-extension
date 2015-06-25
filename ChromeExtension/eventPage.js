@@ -9,19 +9,14 @@ var CONFIGURATION = {
         'CATEGORY_UPDATES'
         ]
 };
+var subscription;
 
 window.addEventListener("beforeunload", cleanUp, false);
+window.gapi_onload = function() {
+    init();
+};
 chrome.runtime.onMessage.addListener(messageHandler);
 chrome.storage.onChanged.addListener(storageOnChangeHandler)
-chrome.runtime.onStartup.addListener(function(){
-    if (typeof document != 'undefined'){
-	var head = document.getElementsByTagName('head')[0];
-	var script = document.createElement('script');
-	script.type = 'text/javascript';
-	script.src = "https://apis.google.com/js/client.js?onload=init()";
-	head.appendChild(script);
-    }
-});
 
 function init() {
     syncStorage();
@@ -81,7 +76,7 @@ function loadApi() {
 }
 
 function gmailAPILoaded(){
-    console.log("gmail api loaded.")
+    console.log("gmail api loaded.");
     //get user email address and strip out the '@' to create a unique topic name.
     var userID;
     gapi.client.gmail.users.getProfile({
@@ -99,12 +94,11 @@ function gmailAPILoaded(){
     	  topic = response;  
     	});
     //Subscribe to the topic.
-    var subscription;
     gapi.client.pubsub.projects.subscriptions.create({
     	'topic': topic.name,
     	'ackDeadlineSeconds': 300
     }).then(function(response){
-    	subscription = response;
+    	chrome.storage.sync.set({'subscription': response});
     });
     //Allow Gmail to publish messages to our topic.
     gapi.client.pubsub.projects.topics.setIamPolicy({
@@ -134,24 +128,63 @@ function gmailAPILoaded(){
 }
 
 function pullNotifications() {
-	//TODO: add polling code
+	var notificationOptions = {
+	    'type': "basic",
+	    'title': "Gmail notification!",
+	    'message': "No new gmail messages found.",
+	    'contextMessage': "No messages found in monitored labels.",
+	    'isClickable': true
+	};
+	//var newMessages = false;
+	gapi.client.pubsub.projects.subscriptions.pull({'subscription': subscription.name,
+	    'request body': {
+	        'returnImmediately': true
+	    }
+	}).then(function(response){
+	    if (response.data == 'undefined') {
+	        console.log("no new messages found.");
+	        //for testing remove later:
+	        notificationOptions.isClickable = false;
+	        chrome.notifications.create("no message", notificationOptions, function(notificationId){
+	            
+	        });
+	        return;
+	    }
+	    var decodedData = atob(response.data);
+	    console.log("decodedData from pull request = " + decodedData);
+	    console.log("option attributes from pull request = " + response.attributes);
+	    notificationOptions.message = "New gmail messages!";
+	    notificationOptions.contextMessage = "New messages found in monitored labels.";
+	    var notificationClickedCallback = function(notificationId) {
+	        var createProperties = {
+	            'url': "https://gmail.com"
+	        };
+	        chrome.tabs.create(createProperties);
+	        chrome.notifications.onClicked.removeListener(notificationClickedCallback);
+	    };
+	    chrome.notifications.onClicked.addListener(notificationClickedCallback);
+	    chrome.notifications.create(response.messageId, notificationOptions, function(notificationId){
+	            //DO STUFF
+	        });
+	});
 }
 
 function cleanUp(e) {
 	//TODO: Add code to clean up topics,mailbox watch, etc.
 	gapi.client.gmail.users.stop({
 	    'userId': 'me'
-	})
+	});
 }
 
-function getLabels() {
+function getLabels(request, sendResponse) {
     var labelList;
     gapi.client.gmail.users.labels.list({
         'userId': 'me'
     }).then(function(response){
         labelList = response;
+        sendResponse({action: request.action, status: "completed", labels: labelList});
     });
-    return labelList;
+    //return labelList;
 }
 
 function messageHandler(request, sender, sendResponse) {
@@ -165,8 +198,8 @@ function messageHandler(request, sender, sendResponse) {
             sendResponse({action: request.action, status: "completed", config: CONFIGURATION});
             break;
         case "getLabels":
-            var labelList = getLabels();
-            sendResponse({action: request.action, status: "completed", labels: labelList});
+            getLabels();
+            //sendResponse({action: request.action, status: "completed", labels: labelList});
             break;
         case "authenticate":
             authenticate(request, sendResponse);
@@ -195,6 +228,9 @@ function storageOnChangeHandler(changes, areaName) {
     }
     if (typeof changes.CONFIGURATION != 'undefined') {
         CONFIGURATION = changes.CONFIGURATION.newValue;
+    }
+    if (typeof changes.subscription != 'undefined') {
+        subscription = changes.subscription.newValue;
     }
 }
 

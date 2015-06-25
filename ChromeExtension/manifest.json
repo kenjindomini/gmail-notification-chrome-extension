@@ -3,10 +3,11 @@
     
     "name": "Gmail Desktop Notifications",
     "description": "Chrome Extension for popping up an OS notification when a new email is received to Gmail.",
-    "version": "0.4.0.0",
+    "version": "0.4.4.0",
     
     "background": {
-    "scripts": ["eventPage.js"],
+    "scripts": ["eventPage.js",
+    "gapi-client.js"],
     "persistent": false
     },
     "browser_action": {
@@ -27,6 +28,7 @@
     "permissions": [
         "notifications",
         "identity",
-        "storage"
+        "storage",
+        "tabs"
         ]
 }
