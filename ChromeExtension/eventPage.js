@@ -45,11 +45,13 @@ function authenticate(request, sendResponse) {
 		},
 		function(token){
 		    if (typeof token != 'undefined') {
+		        console.log("getAuthToken(interactive: true) successful.");
 		        chrome.storage.sync.set({'authenticated': true});
 		        sendResponse({action: request.action, status: "completed"});
 		        loadApi();
 		    }
             else {
+                console.log("getAuthToken(interactive: true) not successful.");
                 sendResponse({action: request.action, status: "failed"});
             }
 		}
@@ -63,8 +65,13 @@ function authorize(){
 		},
 		function(token){
 		    if (typeof token != 'undefined') {
+		        console.log("getAuthToken(interactive: false) successful.");
 		        chrome.storage.sync.set({'authenticated': true})
 		        loadApi();
+		    }
+		    else {
+		        console.log("getAuthToken(interactive: false) not successful.");
+		        chrome.storage.sync.set({'authenticated': false})
 		    }
 		}
 	);
@@ -223,6 +230,7 @@ function storageOnChangeHandler(changes, areaName) {
         return;
     }
     if (typeof changes.authenticated != 'undefined') {
+        console.log("Updated global variable authenticated to match the one in sync storage.");
         authenticated = changes.authenticated.newValue;
         var badgeText;
         chrome.browserAction.getBadgeText({}, function(result){badgeText=result;});
@@ -231,9 +239,11 @@ function storageOnChangeHandler(changes, areaName) {
         }
     }
     if (typeof changes.CONFIGURATION != 'undefined') {
+        console.log("Updated global variable CONFIGURATION to match the one in sync storage.");
         CONFIGURATION = changes.CONFIGURATION.newValue;
     }
     if (typeof changes.subscription != 'undefined') {
+        console.log("Updated global variable subscription to match the one in sync storage.");
         subscription = changes.subscription.newValue;
     }
 }
