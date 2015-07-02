@@ -89,52 +89,58 @@ function gmailAPILoaded(){
     var watchResponse;
     //get user email address and strip out the '@' to create a unique topic name.
     var userID;
+    authorize();
     gapi.client.gmail.users.getProfile({
     	'userId': 'me',
     	'fields': 'emailAddress'
     }).then(function(response){
-    	userID = userID.replace('@', '');
-    });
-    var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
-    //Create the topic.
-    var topic;
-    gapi.client.pubsub.projects.topics.create({
-    	'name': topicName
-    	}).then(function(response) {
-    	  topic = response;
-    	  //Subscribe to the topic.
-        gapi.client.pubsub.projects.subscriptions.create({
-        	'topic': topic.name,
-        	'ackDeadlineSeconds': 300
-        }).then(function(response){
-        	chrome.storage.sync.set({'subscription': response});
-    	    //Allow Gmail to publish messages to our topic.
-            gapi.client.pubsub.projects.topics.setIamPolicy({
-    	        'resource': topicName,
-    	        'Request body': {
-    		        'policy': {
-    			        'bindings': [{
-    				        'role': "roles/pubsub.publisher",
-    				        'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
-    			        }]
-    		        }
-    	        }
+    	userID = response.userID.replace('@', '');
+    	var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
+        //Create the topic.
+        var topic;
+        authorize();
+        gapi.client.pubsub.projects.topics.create({
+        	'name': topicName
+    	    }).then(function(response) {
+                topic = response;
+    	        //Subscribe to the topic.
+                authorize();
+                gapi.client.pubsub.projects.subscriptions.create({
+        	        'topic': topic.name,
+        	        'ackDeadlineSeconds': 300
             }).then(function(response){
-                //Tell api to publish notifications of new gmail messages to topic.
-                gapi.client.gmail.users.watch({
-    	            'userId': 'me',
+        	    chrome.storage.sync.set({'subscription': response});
+    	        //Allow Gmail to publish messages to our topic.
+    	        authorize();
+                gapi.client.pubsub.projects.topics.setIamPolicy({
+    	            'resource': topicName,
     	            'Request body': {
-    		            "topicName": topicName,
-    		            "labelIds": CONFIGURATION.monitorLabels
+    		            'policy': {
+    			            'bindings': [{
+    				            'role': "roles/pubsub.publisher",
+    				            'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
+    			            }]
+    		            }
     	            }
                 }).then(function(response){
-                    watchResponse = response;
-                    //poll topic every 30 seconds.
-                    window.setInterval(function(){pullNotifications();}, CONFIGURATION.pullInterval);
+                    //Tell api to publish notifications of new gmail messages to topic.
+                    authorize();
+                    gapi.client.gmail.users.watch({
+    	                'userId': 'me',
+    	                'Request body': {
+    		                "topicName": topicName,
+    		                "labelIds": CONFIGURATION.monitorLabels
+    	                }
+                    }).then(function(response){
+                        watchResponse = response;
+                        //poll topic every 30 seconds.
+                        window.setInterval(function(){pullNotifications();}, CONFIGURATION.pullInterval);
+                    });
                 });
             });
         });
     });
+
 }
 
 function pullNotifications() {
