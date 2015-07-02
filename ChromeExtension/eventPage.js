@@ -25,6 +25,9 @@ function init() {
     if (authenticated == false) {
         chrome.browserAction.setBadgeText({text: '!'});
     }
+    else {
+        loadApi();
+    }
 }
 
 function syncStorage() {
@@ -67,7 +70,6 @@ function authorize(){
 		    if (typeof token != 'undefined') {
 		        console.log("getAuthToken(interactive: false) successful.");
 		        chrome.storage.sync.set({'authenticated': true})
-		        loadApi();
 		    }
 		    else {
 		        console.log("getAuthToken(interactive: false) not successful.");
