@@ -78,7 +78,7 @@ function authorize(){
 }
 
 function loadApi() {
-    gapi.client.load('pubsub', 'v1beta2', function(){
+    gapi.client.load('pubsub', 'v1', function(){
         console.log("Google Cloud PubSub API loaded.");
         gapi.client.load('gmail', 'v1', gmailAPILoaded);
     });
@@ -140,7 +140,6 @@ function gmailAPILoaded(){
             });
         });
     });
-
 }
 
 function pullNotifications() {
@@ -152,6 +151,7 @@ function pullNotifications() {
 	    'isClickable': true
 	};
 	//var newMessages = false;
+	authorize();
 	gapi.client.pubsub.projects.subscriptions.pull({'subscription': subscription.name,
 	    'request body': {
 	        'returnImmediately': true
@@ -188,6 +188,7 @@ function pullNotifications() {
 
 function cleanUp(e) {
 	//TODO: Add code to clean up topics,mailbox watch, etc.
+	authorize();
 	gapi.client.gmail.users.stop({
 	    'userId': 'me'
 	});
@@ -195,6 +196,7 @@ function cleanUp(e) {
 
 function getLabels(request, sendResponse) {
     var labelList;
+    authorize();
     gapi.client.gmail.users.labels.list({
         'userId': 'me'
     }).then(function(response){
