@@ -96,6 +96,7 @@ function gmailAPILoaded(){
     	'userId': 'me',
     	'fields': 'emailAddress'
     }).then(function(response){
+        console.log("gapi.client.gmail.users.getProfile returned: " + response);
     	userID = response.userID.replace('@', '');
     	var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
         //Create the topic.
@@ -104,6 +105,7 @@ function gmailAPILoaded(){
         gapi.client.pubsub.projects.topics.create({
         	'name': topicName
     	    }).then(function(response) {
+    	        console.log("gapi.client.pubsub.projects.topics.create returned: " + response);
                 topic = response;
     	        //Subscribe to the topic.
                 authorize();
@@ -111,6 +113,7 @@ function gmailAPILoaded(){
         	        'topic': topic.name,
         	        'ackDeadlineSeconds': 300
             }).then(function(response){
+                console.log("gapi.client.pubsub.projects.subscriptions.create returned: " + response);
         	    chrome.storage.sync.set({'subscription': response});
     	        //Allow Gmail to publish messages to our topic.
     	        authorize();
@@ -125,6 +128,7 @@ function gmailAPILoaded(){
     		            }
     	            }
                 }).then(function(response){
+                    console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: " + response);
                     //Tell api to publish notifications of new gmail messages to topic.
                     authorize();
                     gapi.client.gmail.users.watch({
@@ -134,6 +138,7 @@ function gmailAPILoaded(){
     		                "labelIds": CONFIGURATION.monitorLabels
     	                }
                     }).then(function(response){
+                        console.log("gapi.client.gmail.users.watch returned: " + response);
                         watchResponse = response;
                         //poll topic every 30 seconds.
                         window.setInterval(function(){pullNotifications();}, CONFIGURATION.pullInterval);
