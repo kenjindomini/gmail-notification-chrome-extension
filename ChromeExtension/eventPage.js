@@ -241,9 +241,7 @@ function messageHandler(request, sender, sendResponse) {
 }
 
 function storageOnChangeHandler(changes, areaName) {
-    if (areaName != "sync") {
-        return;
-    }
+
     if (typeof changes.authenticated != 'undefined') {
         console.log("Updated global variable authenticated to match the one in sync storage.");
         authenticated = changes.authenticated.newValue;
