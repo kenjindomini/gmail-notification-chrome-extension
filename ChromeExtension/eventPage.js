@@ -25,7 +25,6 @@ function init() {
     if (authenticated == false) {
         chrome.browserAction.setBadgeText({text: '!'});
     }
-    loadApi();
 }
 
 function syncStorage() {
@@ -49,7 +48,6 @@ function authenticate(request, sendResponse) {
 		        console.log("getAuthToken(interactive: true) successful.");
 		        chrome.storage.sync.set({'authenticated': true});
 		        sendResponse({action: request.action, status: "completed"});
-		        loadApi();
 		    }
             else {
                 console.log("getAuthToken(interactive: true) not successful.");
@@ -239,7 +237,6 @@ function messageHandler(request, sender, sendResponse) {
 }
 
 function storageOnChangeHandler(changes, areaName) {
-
     if (typeof changes.authenticated != 'undefined') {
         console.log("Updated global variable authenticated to match the one in sync storage.");
         authenticated = changes.authenticated.newValue;
@@ -247,6 +244,9 @@ function storageOnChangeHandler(changes, areaName) {
         chrome.browserAction.getBadgeText({}, function(result){badgeText=result;});
         if (changes.authenticated.newValue == true && badgeText == '!') {
             chrome.browserAction.setBadgeText('');
+        }
+        if (changes.authenticated.oldValue == false && changes.authenticated.newValue == true) {
+            loadApi();
         }
     }
     if (typeof changes.CONFIGURATION != 'undefined') {
