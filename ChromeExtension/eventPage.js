@@ -25,9 +25,7 @@ function init() {
     if (authenticated == false) {
         chrome.browserAction.setBadgeText({text: '!'});
     }
-    else {
-        loadApi();
-    }
+    loadApi();
 }
 
 function syncStorage() {
