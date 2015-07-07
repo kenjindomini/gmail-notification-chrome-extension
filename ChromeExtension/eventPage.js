@@ -28,6 +28,10 @@ function init() {
 }
 
 function syncStorage() {
+    chrome.runtime.onMessage.removeListener(messageHandler);
+    chrome.storage.local.set({authenticated: authenticated,
+        subscription: subscription
+    });
     chrome.storage.sync.get('CONFIGURATION', function(items) {
         if (typeof items != 'undefined') {
         CONFIGURATION = items.CONFIGURATION;
@@ -36,6 +40,7 @@ function syncStorage() {
             chrome.storage.sync.set({'CONFIGURATION': CONFIGURATION});
         }
     });
+    chrome.runtime.onMessage.addListener(messageHandler);
 }
 
 function authenticate(request, sendResponse) {
@@ -46,7 +51,7 @@ function authenticate(request, sendResponse) {
 		function(token){
 		    if (typeof token != 'undefined') {
 		        console.log("getAuthToken(interactive: true) successful.");
-		        chrome.storage.sync.set({'authenticated': true});
+		        chrome.storage.local.set({'authenticated': true});
 		        sendResponse({action: request.action, status: "completed"});
 		    }
             else {
@@ -65,11 +70,11 @@ function authorize(){
 		function(token){
 		    if (typeof token != 'undefined') {
 		        console.log("getAuthToken(interactive: false) successful.");
-		        chrome.storage.sync.set({'authenticated': true});
+		        chrome.storage.local.set({'authenticated': true});
 		    }
 		    else {
 		        console.log("getAuthToken(interactive: false) not successful.");
-		        chrome.storage.sync.set({'authenticated': false});
+		        chrome.storage.local.set({'authenticated': false});
 		    }
 		}
 	);
@@ -110,7 +115,7 @@ function gmailAPILoaded(){
         	        'ackDeadlineSeconds': 300
             }).then(function(response){
                 console.log("gapi.client.pubsub.projects.subscriptions.create returned: " + response);
-        	    chrome.storage.sync.set({'subscription': response});
+        	    chrome.storage.local.set({'subscription': response});
     	        //Allow Gmail to publish messages to our topic.
     	        authorize();
                 gapi.client.pubsub.projects.topics.setIamPolicy({
@@ -239,7 +244,7 @@ function messageHandler(request, sender, sendResponse) {
 function storageOnChangeHandler(changes, areaName) {
     console.log("storageOnChangeHandler called: areaname= " + areaName + " ,changes= " + changes);
     if (typeof changes.authenticated != 'undefined') {
-        console.log("Updated global variable authenticated to match the one in sync storage.");
+        console.log("Updated global variable authenticated to match the one in local storage.");
         authenticated = changes.authenticated.newValue;
         var badgeText;
         chrome.browserAction.getBadgeText({}, function(result){badgeText=result;});
@@ -255,7 +260,7 @@ function storageOnChangeHandler(changes, areaName) {
         CONFIGURATION = changes.CONFIGURATION.newValue;
     }
     if (typeof changes.subscription != 'undefined') {
-        console.log("Updated global variable subscription to match the one in sync storage.");
+        console.log("Updated global variable subscription to match the one in local storage.");
         subscription = changes.subscription.newValue;
     }
 }
