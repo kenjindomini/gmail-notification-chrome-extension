@@ -12,11 +12,11 @@ var CONFIGURATION = {
 var subscription;
 
 window.addEventListener("beforeunload", cleanUp, false);
+chrome.runtime.onMessage.addListener(messageHandler);
+chrome.storage.onChanged.addListener(storageOnChangeHandler);
 window.gapi_onload = function() {
     init();
 };
-chrome.runtime.onMessage.addListener(messageHandler);
-chrome.storage.onChanged.addListener(storageOnChangeHandler)
 
 function init() {
     syncStorage();
@@ -65,11 +65,11 @@ function authorize(){
 		function(token){
 		    if (typeof token != 'undefined') {
 		        console.log("getAuthToken(interactive: false) successful.");
-		        chrome.storage.sync.set({'authenticated': true})
+		        chrome.storage.sync.set({'authenticated': true});
 		    }
 		    else {
 		        console.log("getAuthToken(interactive: false) not successful.");
-		        chrome.storage.sync.set({'authenticated': false})
+		        chrome.storage.sync.set({'authenticated': false});
 		    }
 		}
 	);
@@ -237,6 +237,7 @@ function messageHandler(request, sender, sendResponse) {
 }
 
 function storageOnChangeHandler(changes, areaName) {
+    console.log("storageOnChangeHandler called: areaname= " + areaName + " ,changes= " + changes);
     if (typeof changes.authenticated != 'undefined') {
         console.log("Updated global variable authenticated to match the one in sync storage.");
         authenticated = changes.authenticated.newValue;
