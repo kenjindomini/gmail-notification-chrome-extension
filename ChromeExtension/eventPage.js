@@ -64,6 +64,7 @@ function authenticate(request, sendResponse) {
 
 function authorize(){
 	//oauth2 auth
+	var done = false;
 	chrome.identity.getAuthToken(
 		{'interactive': false
 		},
@@ -76,8 +77,11 @@ function authorize(){
 		        console.log("getAuthToken(interactive: false) not successful.");
 		        chrome.storage.local.set({'authenticated': false});
 		    }
+		    done = true;
 		}
 	);
+	//block until getAuthToken returns
+	while(!done){}
 }
 
 function loadApi() {
