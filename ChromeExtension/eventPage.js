@@ -53,6 +53,9 @@ function authenticate(request, sendResponse) {
 		        console.log("getAuthToken(interactive: true) successful.");
 		        chrome.storage.local.set({'authenticated': true});
 		        sendResponse({action: request.action, status: "completed"});
+		        gapi.auth.setToken({
+		            'access_token': token
+                });
 		    }
             else {
                 console.log("getAuthToken(interactive: true) not successful.");
@@ -64,18 +67,27 @@ function authenticate(request, sendResponse) {
 
 function authorize(){
 	//oauth2 auth
-    gapi.client.load('auth2').then(function(response){
-        gapi.auth2.init({fetch_basic_profile: false}).then(function(){
-            var user = gapi.auth2.getAuthInstance();
-            user.isSignedIn.listen(function(isSignedIn){
-                authenticated = isSignedIn;
-                if (authenticated == false) {
-                    authorize();
-                }
-            });
-            user.signIn();
-        });
-    });
+	var done = false;
+	chrome.identity.getAuthToken(
+		{'interactive': false
+		},
+		function(token){
+		    if (typeof token != 'undefined') {
+		        console.log("getAuthToken(interactive: false) successful.");
+		        chrome.storage.local.set({'authenticated': true});
+		        gapi.auth.setToken({
+		            'access_token': token
+                });
+		    }
+		    else {
+		        console.log("getAuthToken(interactive: false) not successful.");
+		        chrome.storage.local.set({'authenticated': false});
+		    }
+		    done = true;
+		}
+	);
+	//block until getAuthToken returns
+	while(!done){}
 }
 
 function loadApi() {
@@ -90,7 +102,7 @@ function gmailAPILoaded(){
     var watchResponse;
     //get user email address and strip out the '@' to create a unique topic name.
     var userID;
-    //authorize();
+    authorize();
     gapi.client.gmail.users.getProfile({
     	'userId': 'me',
     	'fields': 'emailAddress'
@@ -100,14 +112,14 @@ function gmailAPILoaded(){
     	var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
         //Create the topic.
         var topic;
-        //authorize();
+        authorize();
         gapi.client.pubsub.projects.topics.create({
         	'name': topicName
     	    }).then(function(response) {
     	        console.log("gapi.client.pubsub.projects.topics.create returned: " + response);
                 topic = response;
     	        //Subscribe to the topic.
-                //authorize();
+                authorize();
                 gapi.client.pubsub.projects.subscriptions.create({
         	        'topic': topic.name,
         	        'ackDeadlineSeconds': 300
@@ -115,7 +127,7 @@ function gmailAPILoaded(){
                 console.log("gapi.client.pubsub.projects.subscriptions.create returned: " + response);
         	    chrome.storage.local.set({'subscription': response});
     	        //Allow Gmail to publish messages to our topic.
-    	        //authorize();
+    	        authorize();
                 gapi.client.pubsub.projects.topics.setIamPolicy({
     	            'resource': topicName,
     	            'Request body': {
@@ -129,7 +141,7 @@ function gmailAPILoaded(){
                 }).then(function(response){
                     console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: " + response);
                     //Tell api to publish notifications of new gmail messages to topic.
-                    //authorize();
+                    authorize();
                     gapi.client.gmail.users.watch({
     	                'userId': 'me',
     	                'Request body': {
@@ -157,7 +169,7 @@ function pullNotifications() {
 	    'isClickable': true
 	};
 	//var newMessages = false;
-	//authorize();
+	authorize();
 	gapi.client.pubsub.projects.subscriptions.pull({'subscription': subscription.name,
 	    'request body': {
 	        'returnImmediately': true
@@ -194,7 +206,7 @@ function pullNotifications() {
 
 function cleanUp(e) {
 	//TODO: Add code to clean up topics,mailbox watch, etc.
-	//authorize();
+	authorize();
 	gapi.client.gmail.users.stop({
 	    'userId': 'me'
 	});
@@ -202,7 +214,7 @@ function cleanUp(e) {
 
 function getLabels(request, sendResponse) {
     var labelList;
-    //authorize();
+    authorize();
     gapi.client.gmail.users.labels.list({
         'userId': 'me'
     }).then(function(response){
