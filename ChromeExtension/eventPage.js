@@ -69,7 +69,7 @@ function authorize(){
 	//oauth2 auth
 	chrome.identity.getAuthToken(
 		{'interactive': false
-		}).then(function(token){
+		}, function(token){
 		    if (typeof token != 'undefined') {
 		        console.log("getAuthToken(interactive: false) successful.");
 		        chrome.storage.local.set({'authenticated': true});
