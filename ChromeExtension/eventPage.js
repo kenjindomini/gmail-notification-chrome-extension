@@ -94,16 +94,13 @@ function loadApi() {
 
 function gmailAPILoaded(){
     console.log("gmail api loaded.");
-    var watchResponse;
-    //get user email address and strip out the '@' to create a unique topic name.
-    var userID;
     authorize();
     gapi.client.gmail.users.getProfile({
     	'userId': 'me',
     	'fields': 'emailAddress'
     }).then(function(response){
         console.log("gapi.client.gmail.users.getProfile returned: " + response);
-    	userID = response.userID.replace('@', '');
+    	var userID = response.userId.replace('@', '');
     	var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
         //Create the topic.
         var topic;
@@ -145,7 +142,6 @@ function gmailAPILoaded(){
     	                }
                     }).then(function(response){
                         console.log("gapi.client.gmail.users.watch returned: " + response);
-                        watchResponse = response;
                         //poll topic every 30 seconds.
                         window.setInterval(function(){pullNotifications();}, CONFIGURATION.pullInterval);
                     });
