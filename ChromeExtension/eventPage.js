@@ -99,8 +99,8 @@ function gmailAPILoaded(){
     	'userId': 'me',
     	'fields': 'emailAddress'
     }).then(function(response){
-        console.log("gapi.client.gmail.users.getProfile returned: " + response);
-    	var userID = response.userId.replace('@', '');
+        console.log("gapi.client.gmail.users.getProfile returned: " + response.toString());
+    	var userID = response.emailAddress.replace('@', '');
     	var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
         //Create the topic.
         var topic;
