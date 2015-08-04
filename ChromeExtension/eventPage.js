@@ -99,7 +99,7 @@ function gmailAPILoaded(){
     	'userId': 'me',
     	'fields': 'emailAddress'
     }).then(function(response){
-        console.log("gapi.client.gmail.users.getProfile returned: " + response.toString());
+        console.log("gapi.client.gmail.users.getProfile returned: " + response.result.toString());
     	var userID = response.result.emailAddress.replace('@', '');
     	var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
         //Create the topic.
@@ -108,16 +108,16 @@ function gmailAPILoaded(){
         gapi.client.pubsub.projects.topics.create({
         	'name': topicName
     	    }).then(function(response) {
-    	        console.log("gapi.client.pubsub.projects.topics.create returned: " + response);
-                topic = response;
+    	        console.log("gapi.client.pubsub.projects.topics.create returned: " + response.result.toString());
+                topic = response.result;
     	        //Subscribe to the topic.
                 authorize();
                 gapi.client.pubsub.projects.subscriptions.create({
         	        'topic': topic.name,
         	        'ackDeadlineSeconds': 300
             }).then(function(response){
-                console.log("gapi.client.pubsub.projects.subscriptions.create returned: " + response);
-        	    chrome.storage.local.set({'subscription': response});
+                console.log("gapi.client.pubsub.projects.subscriptions.create returned: " + response.result.toString());
+        	    chrome.storage.local.set({'subscription': response.result});
     	        //Allow Gmail to publish messages to our topic.
     	        authorize();
                 gapi.client.pubsub.projects.topics.setIamPolicy({
@@ -131,7 +131,7 @@ function gmailAPILoaded(){
     		            }
     	            }
                 }).then(function(response){
-                    console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: " + response);
+                    console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: " + response.result.toString());
                     //Tell api to publish notifications of new gmail messages to topic.
                     authorize();
                     gapi.client.gmail.users.watch({
@@ -141,7 +141,7 @@ function gmailAPILoaded(){
     		                "labelIds": CONFIGURATION.monitorLabels
     	                }
                     }).then(function(response){
-                        console.log("gapi.client.gmail.users.watch returned: " + response);
+                        console.log("gapi.client.gmail.users.watch returned: " + response.result.toString());
                         //poll topic every 30 seconds.
                         window.setInterval(function(){pullNotifications();}, CONFIGURATION.pullInterval);
                     });
@@ -209,7 +209,7 @@ function getLabels(request, sendResponse) {
     gapi.client.gmail.users.labels.list({
         'userId': 'me'
     }).then(function(response){
-        labelList = response;
+        labelList = response.result.labels;
         sendResponse({action: request.action, status: "completed", labels: labelList});
     });
     //return labelList;
