@@ -110,6 +110,7 @@ function gmailAPILoaded(){
     	    }).then(function(response) {
     	        console.log("gapi.client.pubsub.projects.topics.create returned: " + response.result.toString());
                 topic = response.result;
+                chrome.storage.local.set({'topic': topic});
     	        //Subscribe to the topic.
                 authorize();
                 gapi.client.pubsub.projects.subscriptions.create({
@@ -200,6 +201,15 @@ function cleanUp(e) {
 	authorize();
 	gapi.client.gmail.users.stop({
 	    'userId': 'me'
+	}).then(function(response) {
+	    var topicName;
+	    chrome.storage.local.get('topic', function(topic){
+	        topicName = topic.name;
+	    });
+	    authorize();
+	    gapi.client.pubsub.projects.topics.delete({
+        	'topic': topicName
+    	    });
 	});
 }
 
@@ -209,7 +219,7 @@ function getLabels(request, sendResponse) {
     gapi.client.gmail.users.labels.list({
         'userId': 'me'
     }).then(function(response){
-        labelList = response.result.labels;
+        labelList = response.result.labels; //this may need to be parsed further.
         sendResponse({action: request.action, status: "completed", labels: labelList});
     });
     //return labelList;
