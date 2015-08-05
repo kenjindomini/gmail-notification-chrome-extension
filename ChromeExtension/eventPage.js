@@ -236,7 +236,7 @@ function messageHandler(request, sender, sendResponse) {
             sendResponse({action: request.action, status: "completed", config: CONFIGURATION});
             break;
         case "getLabels":
-            getLabels();
+            getLabels(request, sen);
             //sendResponse({action: request.action, status: "completed", labels: labelList});
             break;
         case "authenticate":
