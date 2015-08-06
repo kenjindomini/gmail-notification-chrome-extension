@@ -22,9 +22,7 @@ function init() {
     syncStorage();
     //Try to authenticate with a cached token.
     authorize();
-    if (authenticated == false) {
-        chrome.browserAction.setBadgeText({text: '!'});
-    }
+
 }
 
 function syncStorage() {
@@ -60,6 +58,7 @@ function authenticate(request, sendResponse) {
             else {
                 console.log("getAuthToken(interactive: true) not successful.");
                 sendResponse({action: request.action, status: "failed"});
+                chrome.browserAction.setBadgeText({text: '!'});
             }
 		}
 	);
@@ -80,6 +79,7 @@ function authorize(){
 		    else {
 		        console.log("getAuthToken(interactive: false) not successful.");
 		        chrome.storage.local.set({'authenticated': false});
+		        chrome.browserAction.setBadgeText({text: '!'});
 		    }
 		}
 	);
@@ -99,7 +99,8 @@ function gmailAPILoaded(){
     	'userId': 'me',
     	'fields': 'emailAddress'
     }).then(function(response){
-        console.log("gapi.client.gmail.users.getProfile returned: " + response.result.toString());
+        console.log("gapi.client.gmail.users.getProfile returned: ");
+        console.log(response.result);
     	var userID = response.result.emailAddress.replace('@', '');
     	var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
         //Create the topic.
@@ -107,18 +108,22 @@ function gmailAPILoaded(){
         authorize();
         gapi.client.pubsub.projects.topics.create({
         	'name': topicName
-    	    }).then(function(response) {
-    	        console.log("gapi.client.pubsub.projects.topics.create returned: " + response.result.toString());
-                topic = response.result;
-                chrome.storage.local.set({'topic': topic});
-    	        //Subscribe to the topic.
-                authorize();
-                gapi.client.pubsub.projects.subscriptions.create({
-        	        'topic': topic.name,
-        	        'ackDeadlineSeconds': 300
+    	}).then(function(response) {
+    	    console.log("gapi.client.pubsub.projects.topics.create returned: ");
+    	    console.log(response.result);
+            topic = response.result;
+            chrome.storage.local.set({'topic': topic});
+    	    //Subscribe to the topic.
+            authorize();
+            var subname = topic.name.replace("/topics/", "/subscriptions/");
+            gapi.client.pubsub.projects.subscriptions.create({
+                'name': subname,
+        	    'topic': topic.name,
+        	    'ackDeadlineSeconds': 300
             }).then(function(response){
-                console.log("gapi.client.pubsub.projects.subscriptions.create returned: " + response.result.toString());
-        	    chrome.storage.local.set({'subscription': response.result});
+                console.log("gapi.client.pubsub.projects.subscriptions.create returned: ");
+                console.log(response.result);
+                chrome.storage.local.set({'subscription': response.result});
     	        //Allow Gmail to publish messages to our topic.
     	        authorize();
                 gapi.client.pubsub.projects.topics.setIamPolicy({
@@ -126,13 +131,14 @@ function gmailAPILoaded(){
     	            'Request body': {
     		            'policy': {
     			            'bindings': [{
-    				            'role': "roles/pubsub.publisher",
+    			                'role': "roles/pubsub.publisher",
     				            'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
     			            }]
     		            }
     	            }
                 }).then(function(response){
-                    console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: " + response.result.toString());
+                    console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: ");
+                    console.log(response.result);
                     //Tell api to publish notifications of new gmail messages to topic.
                     authorize();
                     gapi.client.gmail.users.watch({
@@ -142,7 +148,8 @@ function gmailAPILoaded(){
     		                "labelIds": CONFIGURATION.monitorLabels
     	                }
                     }).then(function(response){
-                        console.log("gapi.client.gmail.users.watch returned: " + response.result.toString());
+                        console.log("gapi.client.gmail.users.watch returned: ");
+                        console.log(response.result);
                         //poll topic every 30 seconds.
                         window.setInterval(function(){pullNotifications();}, CONFIGURATION.pullInterval);
                     });
@@ -179,7 +186,8 @@ function pullNotifications() {
 	    var decodedData = atob(response.data);
 	    //get message count if possible and display on badgetext and in notification
 	    console.log("decodedData from pull request = " + decodedData);
-	    console.log("option attributes from pull request = " + response.attributes);
+	    console.log("option attributes from pull request = ");
+	    console.log(response.attributes);
 	    notificationOptions.message = "New gmail messages!";
 	    notificationOptions.contextMessage = "New messages found in monitored labels.";
 	    var notificationClickedCallback = function(notificationId) {
@@ -236,7 +244,7 @@ function messageHandler(request, sender, sendResponse) {
             sendResponse({action: request.action, status: "completed", config: CONFIGURATION});
             break;
         case "getLabels":
-            getLabels(request, sen);
+            getLabels(request, sendResponse);
             //sendResponse({action: request.action, status: "completed", labels: labelList});
             break;
         case "authenticate":
