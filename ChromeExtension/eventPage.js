@@ -98,6 +98,10 @@ function gmailAPILoaded(){
     gapi.client.gmail.users.getProfile({
     	'userId': 'me',
     	'fields': 'emailAddress'
+    }).then(cb_getUsersProfile_Success, cb_getUsersProfile_Error);
+/*    gapi.client.gmail.users.getProfile({
+    	'userId': 'me',
+    	'fields': 'emailAddress'
     }).then(function(response){
         console.log("gapi.client.gmail.users.getProfile returned: ");
         console.log(response.result);
@@ -128,14 +132,12 @@ function gmailAPILoaded(){
     	        authorize();
                 gapi.client.pubsub.projects.topics.setIamPolicy({
     	            'resource': topicName,
-    	            'Request body': {
-    		            'policy': {
-    			            'bindings': [{
-    			                'role': "roles/pubsub.publisher",
-    				            'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
-    			            }]
-    		            }
-    	            }
+		            'policy': {
+			            'bindings': [{
+			                'role': "roles/pubsub.publisher",
+				            'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
+			            }]
+		            }
                 }).then(function(response){
                     console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: ");
                     console.log(response.result);
@@ -156,7 +158,103 @@ function gmailAPILoaded(){
                 });
             });
         });
+    });*/
+}
+
+function cb_getUsersProfile_Success(response) {
+    console.log("gapi.client.gmail.users.getProfile returned: ");
+    console.log(response.result);
+    var userID = response.result.emailAddress.replace('@', '');
+    var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
+    authorize();
+    gapi.client.pubsub.projects.topics.create({
+    	'name': topicName
+    }).then(cb_pubsubCreateTopic_Success, cb_pubsubCreateTopic_Error);
+}
+
+function cb_getUsersProfile_Error(response) {
+    console.log("gapi.client.gmail.users.getProfile returned an error.");
+    console.log(response);
+    throw "gapi error in gapi.client.gmail.users.getProfile";
+}
+
+function cb_pubsubCreateTopic_Success(response) {
+    console.log("gapi.client.pubsub.projects.topics.create returned: ");
+    console.log(response.result);
+    var topic = response.result;
+    chrome.storage.local.set({'topic': topic});
+    //Subscribe to the topic.
+    authorize();
+    var subname = topic.name.replace("/topics/", "/subscriptions/");
+    gapi.client.pubsub.projects.subscriptions.create({
+        'name': subname,
+	    'topic': topic.name,
+	    'ackDeadlineSeconds': 300
+    }).then(cb_pubsubCreateSubscription_Success, cb_pubsubCreateSubscription_Error);
+}
+
+function cb_pubsubCreateTopic_Error(response) {
+    console.log("gapi.client.pubsub.projects.topics.create returned an error.");
+    console.log(response);
+    throw "gapi error in gapi.client.pubsub.projects.topics.create";
+}
+
+function cb_pubsubCreateSubscription_Success(response) {
+    console.log("gapi.client.pubsub.projects.subscriptions.create returned: ");
+    console.log(response.result);
+    chrome.storage.local.set({'subscription': response.result});
+    var topicName;
+    chrome.storage.local.get('topic', function(response){
+        topicName = response.topic;
     });
+    //Allow Gmail to publish messages to our topic.
+    authorize();
+    gapi.client.pubsub.projects.topics.setIamPolicy({
+        'resource': topicName,
+        'policy': {
+            'bindings': [{
+                'role': "roles/pubsub.publisher",
+	            'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
+            }]
+        }
+    }).then(cb_pubsubTopicsSetIamPolicy_Success, cb_pubsubTopicsSetIamPolicy_Error);
+}
+
+function cb_pubsubCreateSubscription_Error(response) {
+    console.log("gapi.client.pubsub.projects.subscriptions.create returned an error.");
+    console.log(response);
+    throw "gapi error in gapi.client.pubsub.projects.subscriptions.create";
+}
+
+function cb_pubsubTopicsSetIamPolicy_Success(response) {
+    console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: ");
+    console.log(response.result);
+    //Tell api to publish notifications of new gmail messages to topic.
+    authorize();
+    gapi.client.gmail.users.watch({
+        'userId': 'me',
+        "topicName": topicName,
+        "labelIds": CONFIGURATION.monitorLabels
+    }).then(cb_gmailWatch_Success, cb_gmailWatch_Error);
+}
+
+function cb_pubsubTopicsSetIamPolicy_Error(response) {
+    console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned an error.");
+    console.log(response);
+    throw "gapi error in gapi.client.pubsub.projects.topics.setIamPolicy";
+}
+
+function cb_gmailWatch_Success(response) {
+    console.log("gapi.client.gmail.users.watch returned: ");
+    console.log(response.result);
+    //poll topic every 30 seconds.
+    window.setInterval(function(){pullNotifications();}, CONFIGURATION.pullInterval);
+}
+
+function cb_gmailWatch_Error(response) {
+    console.log("gapi.client.gmail.users.watch returned an error.");
+    console.log(response);
+    throw "gapi error in gapi.client.gmail.users.watch";
 }
 
 function pullNotifications() {
@@ -261,7 +359,8 @@ function messageHandler(request, sender, sendResponse) {
 }
 
 function storageOnChangeHandler(changes, areaName) {
-    console.log("storageOnChangeHandler called: areaname= " + areaName + " ,changes= " + changes);
+    console.log("storageOnChangeHandler called: areaname= " + areaName + " ,changes= ");
+    console.log(changes);
     if (typeof changes.authenticated != 'undefined') {
         console.log("Updated global variable authenticated to match the one in local storage.");
         authenticated = changes.authenticated.newValue;
