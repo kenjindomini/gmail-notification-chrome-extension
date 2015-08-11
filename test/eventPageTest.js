@@ -1,4 +1,4 @@
-var vm = require("vm");
+//var vm = require("vm");
 var fs = require("fs");
 var chrome = require("sinon-chrome");
 
