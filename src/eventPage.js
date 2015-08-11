@@ -206,18 +206,18 @@ function cb_pubsubCreateSubscription_Success(response) {
     var topicName;
     chrome.storage.local.get('topic', function(response){
         topicName = response.topic;
+        //Allow Gmail to publish messages to our topic.
+        authorize();
+        gapi.client.pubsub.projects.topics.setIamPolicy({
+            'resource': topicName,
+            'policy': {
+                'bindings': [{
+                    'role': "roles/pubsub.publisher",
+	                'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
+             }]
+            }
+        }).then(cb_pubsubTopicsSetIamPolicy_Success, cb_pubsubTopicsSetIamPolicy_Error);
     });
-    //Allow Gmail to publish messages to our topic.
-    authorize();
-    gapi.client.pubsub.projects.topics.setIamPolicy({
-        'resource': topicName,
-        'policy': {
-            'bindings': [{
-                'role': "roles/pubsub.publisher",
-	            'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
-            }]
-        }
-    }).then(cb_pubsubTopicsSetIamPolicy_Success, cb_pubsubTopicsSetIamPolicy_Error);
 }
 
 function cb_pubsubCreateSubscription_Error(response) {
