@@ -39,3 +39,7 @@ describe('event page', function() {
         done();
     });
 });
+
+mocha.run(function(failures) {
+  phantom.exit(failures);
+});
