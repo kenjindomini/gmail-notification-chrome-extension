@@ -21,12 +21,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function getLabels() {
     chrome.runtime.sendMessage({action: "getLabels"}, function(response){
+        console.log('chrome.runtime.sendMessage({action: "getLabels"}) returned:');
+        console.log(response);
         labelList = response.labels;
     });
 }
 
 function authorize() {
     chrome.runtime.sendMessage({action: "authenticate"}, function(response){
+        console.log('chrome.runtime.sendMessage({action: "authenticate"}) returned:');
+        console.log(response);
         if (response.status == "success") {
             var authorizeDiv = document.getElementById("authorizeDiv");
             while (authorizeDiv.firstChild) {
@@ -44,6 +48,8 @@ function authorize() {
 
 function getConfig() {
     chrome.runtime.sendMessage({action: "getConfig"}, function(response){
+        console.log('chrome.runtime.sendMessage({action: "getConfig"}) returned:');
+        console.log(response);
         CONFIGURATION = response.config;
     });
     var pullIntervalTextInput = document.getElementById("pullInterval");
@@ -53,11 +59,15 @@ function getConfig() {
 function setConfig() {
     //TODO collect config values from popup.html.
     chrome.runtime.sendMessage({action: "setConfig", config: CONFIGURATION}, function(response){
+        console.log('chrome.runtime.sendMessage({action: "setConfig", config: CONFIGURATION}) returned:');
+        console.log(response);
     });
 }
 
 function getAuthStatus() {
     chrome.runtime.sendMessage({action: "getAuthStatus"}, function(response){
+        console.log('chrome.runtime.sendMessage({action: "getAuthStatus"}) returned:');
+        console.log(response);
         if(response.authStatus == false) {
             createAuthorizeButton();
         }

@@ -99,71 +99,11 @@ function gmailAPILoaded(){
     	'userId': 'me',
     	'fields': 'emailAddress'
     }).then(cb_getUsersProfile_Success, cb_getUsersProfile_Error);
-/*    gapi.client.gmail.users.getProfile({
-    	'userId': 'me',
-    	'fields': 'emailAddress'
-    }).then(function(response){
-        console.log("gapi.client.gmail.users.getProfile returned: ");
-        console.log(response.result);
-    	var userID = response.result.emailAddress.replace('@', '');
-    	var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
-        //Create the topic.
-        var topic;
-        authorize();
-        gapi.client.pubsub.projects.topics.create({
-        	'name': topicName
-    	}).then(function(response) {
-    	    console.log("gapi.client.pubsub.projects.topics.create returned: ");
-    	    console.log(response.result);
-            topic = response.result;
-            chrome.storage.local.set({'topic': topic});
-    	    //Subscribe to the topic.
-            authorize();
-            var subname = topic.name.replace("/topics/", "/subscriptions/");
-            gapi.client.pubsub.projects.subscriptions.create({
-                'name': subname,
-        	    'topic': topic.name,
-        	    'ackDeadlineSeconds': 300
-            }).then(function(response){
-                console.log("gapi.client.pubsub.projects.subscriptions.create returned: ");
-                console.log(response.result);
-                chrome.storage.local.set({'subscription': response.result});
-    	        //Allow Gmail to publish messages to our topic.
-    	        authorize();
-                gapi.client.pubsub.projects.topics.setIamPolicy({
-    	            'resource': topicName,
-		            'policy': {
-			            'bindings': [{
-			                'role': "roles/pubsub.publisher",
-				            'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
-			            }]
-		            }
-                }).then(function(response){
-                    console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: ");
-                    console.log(response.result);
-                    //Tell api to publish notifications of new gmail messages to topic.
-                    authorize();
-                    gapi.client.gmail.users.watch({
-    	                'userId': 'me',
-    	                'Request body': {
-    		                "topicName": topicName,
-    		                "labelIds": CONFIGURATION.monitorLabels
-    	                }
-                    }).then(function(response){
-                        console.log("gapi.client.gmail.users.watch returned: ");
-                        console.log(response.result);
-                        //poll topic every 30 seconds.
-                        window.setInterval(function(){pullNotifications();}, CONFIGURATION.pullInterval);
-                    });
-                });
-            });
-        });
-    });*/
 }
 
 function cb_getUsersProfile_Success(response) {
     console.log("gapi.client.gmail.users.getProfile returned: ");
-    console.log(response.result);
+    console.log(response);
     var userID = response.result.emailAddress.replace('@', '');
     var topicName = "projects/gmail-desktop-notifications/topics/"+userID;
     authorize();
@@ -180,7 +120,7 @@ function cb_getUsersProfile_Error(response) {
 
 function cb_pubsubCreateTopic_Success(response) {
     console.log("gapi.client.pubsub.projects.topics.create returned: ");
-    console.log(response.result);
+    console.log(response);
     var topic = response.result;
     chrome.storage.local.set({'topic': topic});
     //Subscribe to the topic.
@@ -201,23 +141,20 @@ function cb_pubsubCreateTopic_Error(response) {
 
 function cb_pubsubCreateSubscription_Success(response) {
     console.log("gapi.client.pubsub.projects.subscriptions.create returned: ");
-    console.log(response.result);
+    console.log(response);
     chrome.storage.local.set({'subscription': response.result});
-    var topicName;
-    chrome.storage.local.get('topic', function(response){
-        topicName = response.topic;
-        //Allow Gmail to publish messages to our topic.
-        authorize();
-        gapi.client.pubsub.projects.topics.setIamPolicy({
-            'resource': topicName,
-            'policy': {
-                'bindings': [{
-                    'role': "roles/pubsub.publisher",
-	                'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
-             }]
-            }
-        }).then(cb_pubsubTopicsSetIamPolicy_Success, cb_pubsubTopicsSetIamPolicy_Error);
-    });
+    var topicName = response.result.topic;
+    //Allow Gmail to publish messages to our topic.
+    authorize();
+    gapi.client.pubsub.projects.topics.setIamPolicy({
+        'resource': topicName,
+        'policy': {
+            'bindings': [{
+                'role': "roles/pubsub.publisher",
+                'members': ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
+         }]
+        }
+    }).then(cb_pubsubTopicsSetIamPolicy_Success, cb_pubsubTopicsSetIamPolicy_Error);
 }
 
 function cb_pubsubCreateSubscription_Error(response) {
@@ -228,14 +165,17 @@ function cb_pubsubCreateSubscription_Error(response) {
 
 function cb_pubsubTopicsSetIamPolicy_Success(response) {
     console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: ");
-    console.log(response.result);
-    //Tell api to publish notifications of new gmail messages to topic.
-    authorize();
-    gapi.client.gmail.users.watch({
-        'userId': 'me',
-        "topicName": topicName,
-        "labelIds": CONFIGURATION.monitorLabels
-    }).then(cb_gmailWatch_Success, cb_gmailWatch_Error);
+    console.log(response);
+    chrome.storage.local.get('topic', function(topic){
+        var topicName = topic.name;
+        //Tell api to publish notifications of new gmail messages to topic.
+        authorize();
+        gapi.client.gmail.users.watch({
+            'userId': 'me',
+            "topicName": topicName,
+            "labelIds": CONFIGURATION.monitorLabels
+        }).then(cb_gmailWatch_Success, cb_gmailWatch_Error);
+    });
 }
 
 function cb_pubsubTopicsSetIamPolicy_Error(response) {
@@ -246,7 +186,7 @@ function cb_pubsubTopicsSetIamPolicy_Error(response) {
 
 function cb_gmailWatch_Success(response) {
     console.log("gapi.client.gmail.users.watch returned: ");
-    console.log(response.result);
+    console.log(response);
     //poll topic every 30 seconds.
     window.setInterval(function(){pullNotifications();}, CONFIGURATION.pullInterval);
 }
@@ -303,23 +243,29 @@ function pullNotifications() {
 }
 
 function cleanUp(e) {
-	//TODO: Add code to clean up topics,mailbox watch, etc.
 	authorize();
 	gapi.client.gmail.users.stop({
 	    'userId': 'me'
 	}).then(function(response) {
-	    var topicName;
+	    console.log("gapi.client.gmail.users.stop returned:");
+	    console.log(response);
 	    chrome.storage.local.get('topic', function(topic){
-	        topicName = topic.name;
+	        var topicName = topic.name;
+	        authorize();
+    	    gapi.client.pubsub.projects.topics.delete({
+            	'topic': topicName
+        	}).then(function(response){
+        	    console.log("gapi.client.pubsub.projects.topics.delete returned:");
+	            console.log(response);
+        	});
+            authorize();
+            gapi.client.pubsub.projects.subscriptions.delete({
+                'subscription': subscription
+            }).then(function(response){
+        	    console.log("gapi.client.pubsub.projects.subscriptions.delete returned:");
+	            console.log(response);
+        	});
 	    });
-	    authorize();
-	    gapi.client.pubsub.projects.topics.delete({
-        	'topic': topicName
-    	});
-        authorize();
-        gapi.client.pubsub.projects.subscriptions.delete({
-            'subscription': subscription
-        });
 	});
 }
 
@@ -329,6 +275,8 @@ function getLabels(request, sendResponse) {
     gapi.client.gmail.users.labels.list({
         'userId': 'me'
     }).then(function(response){
+        console.log("gapi.client.gmail.users.labels.list returned:");
+        console.log(response);
         labelList = response.result.labels; //this may need to be parsed further.
         sendResponse({action: request.action, status: "completed", labels: labelList});
     });
@@ -336,6 +284,8 @@ function getLabels(request, sendResponse) {
 }
 
 function messageHandler(request, sender, sendResponse) {
+    console.log("messageHandler received request:");
+    console.log(request);
     var action = request.action;
     switch (action) {
         case "setConfig":
