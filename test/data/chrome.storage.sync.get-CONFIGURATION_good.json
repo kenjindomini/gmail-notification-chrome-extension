@@ -1,0 +1,8 @@
+{
+    "pullInterval": 25000,
+    "monitorLabels": [
+        "CATEGORY_PERSONAL",
+        "CATEGORY_SOCIAL",
+        "CATEGORY_UPDATES"
+        ]
+}
