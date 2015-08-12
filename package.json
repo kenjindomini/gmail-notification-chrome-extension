@@ -1,6 +1,6 @@
 {
   "name": "gmaildesktopnotification",
-  "version": "0.1.0",
+  "version": "0.6.9.5",
   "description": "Chrome Extension for popping up an OS notification when a new email is received to Gmail.",
   "author": "Keith Olenchak",
   "repository": "https://github.com/kenjindomini/gmail-notification-chrome-extension.git",
