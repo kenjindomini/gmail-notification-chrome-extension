@@ -1,0 +1,22 @@
+{
+    "body": {
+        "emailAddress": "kenjin.domini@gmail.com"
+        }
+    "headers": {
+        "cache-control": "no-cache, no-store, max-age=0, must-revalidate"
+        "content-encoding": "gzip"
+        "content-length": "65"
+        "content-type": "application/json; charset=UTF-8"
+        "date": "Thu, 13 Aug 2015 12:05:30 GMT"
+        "etag": ""Ip-c4kkxSrAosU-u1FNnkeEG0XA/XXznDP5wrR-NUrrMcefzsaISw7g""
+        "expires": "Fri, 01 Jan 1990 00:00:00 GMT"
+        "pragma": "no-cache"
+        "server": "GSE"
+        "vary": "Origin, X-Origin"
+    }
+    "result": {
+        "emailAddress": "kenjin.domini@gmail.com"
+    }
+    "status": 200
+    "statusText": "OK"
+}

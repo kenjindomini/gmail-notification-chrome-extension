@@ -1,0 +1,17 @@
+{
+    result: {
+        ackDeadlineSeconds: 300,
+        name: "projects/gmail-desktop-notifications/subscriptions/kenjin.dominigmail.com",
+        pushConfig: {},
+        topic: "projects/gmail-desktop-notifications/topics/kenjin.dominigmail.com"
+    },
+    body: {
+        "name": "projects/gmail-desktop-notifications/subscriptions/kenjin.dominigmail.com",
+        "topic": "projects/gmail-desktop-notifications/topics/kenjin.dominigmail.com",
+        "pushConfig": {},
+        "ackDeadlineSeconds": 300
+    }
+    headers: {},
+    status: 200,
+    statusText: "OK"
+}

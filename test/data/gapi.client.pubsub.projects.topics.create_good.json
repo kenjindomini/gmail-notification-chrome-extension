@@ -1,0 +1,19 @@
+{
+    result: {
+        name: "projects/gmail-desktop-notifications/topics/kenjin.dominigmail.com"
+    },
+    body: {
+        "name": "projects/gmail-desktop-notifications/topics/kenjin.dominigmail.com"
+    },
+    headers: {
+        cache-control: "private",
+        content-encoding: "gzip",
+        content-length: "93",
+        content-type: "application/json; charset=UTF-8",
+        date: "Thu, 13 Aug 2015 12:05:31 GMT",
+        server: "ESF",
+        vary: "Origin, X-Origin, Referer"
+        },
+    status: 200,
+    statusText: "OK"
+}
