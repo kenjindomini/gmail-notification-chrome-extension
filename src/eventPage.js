@@ -321,9 +321,12 @@ function storageOnChangeHandler(changes, areaName) {
     console.log(changes);
     if (typeof changes.authenticated != 'undefined') {
         console.log("Updated global variable authenticated to match the one in local storage.");
+        console.log(authenticated);
         authenticated = changes.authenticated.newValue;
         var badgeText;
         chrome.browserAction.getBadgeText({}, function(result){badgeText=result;});
+        console.log("getBadgeText() returned:");
+        console.log(badgeText);
         if (changes.authenticated.newValue == true && badgeText == '!') {
             chrome.browserAction.setBadgeText('');
         }
@@ -333,10 +336,12 @@ function storageOnChangeHandler(changes, areaName) {
     }
     if (typeof changes.CONFIGURATION != 'undefined') {
         console.log("Updated global variable CONFIGURATION to match the one in sync storage.");
+        console.log(CONFIGURATION);
         CONFIGURATION = changes.CONFIGURATION.newValue;
     }
     if (typeof changes.subscription != 'undefined') {
         console.log("Updated global variable subscription to match the one in local storage.");
+        console.log(subscription);
         subscription = changes.subscription.newValue;
     }
 }
