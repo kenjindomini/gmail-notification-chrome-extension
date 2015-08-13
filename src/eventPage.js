@@ -166,16 +166,20 @@ function cb_pubsubCreateSubscription_Error(response) {
 function cb_pubsubTopicsSetIamPolicy_Success(response) {
     console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: ");
     console.log(response);
-    chrome.storage.local.get('topic', function(topic){
-        var topicName = topic.name;
-        //Tell api to publish notifications of new gmail messages to topic.
-        authorize();
-        gapi.client.gmail.users.watch({
-            'userId': 'me',
-            "topicName": topicName,
-            "labelIds": CONFIGURATION.monitorLabels
-        }).then(cb_gmailWatch_Success, cb_gmailWatch_Error);
-    });
+    var config;
+    chrome.storage.sync.get('CONFIGURATION', function(syncStorage){
+    	config = syncStorage.CONFIGURATION;
+    	chrome.storage.local.get('topic', function(result){
+        	var topicName = result.topic.name;
+        	//Tell api to publish notifications of new gmail messages to topic.
+        	authorize();
+        	gapi.client.gmail.users.watch({
+        	    'userId': 'me',
+        	    "topicName": topicName,
+        	    "labelIds": config.monitorLabels
+        	}).then(cb_gmailWatch_Success, cb_gmailWatch_Error);
+    	});
+	});
 }
 
 function cb_pubsubTopicsSetIamPolicy_Error(response) {
