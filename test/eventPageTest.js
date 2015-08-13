@@ -43,9 +43,32 @@ describe('event page', function() {
     });
     
     //test failed authentication causes '!' badgeText
-    
+    it("should set badgeText to '!' if authentication failed", function(done) {
+        page.open('empty.html', function() {
+            page.evalulate(function(auth) {
+                chrome.identity.getAuthToken.yields(JSON.parse(auth));
+            }, fs.read('data/chrome.identity.getAuthToken_bad.json'));
+            page.injectJs('../src/eventPage.js');
+            page.evalulate(function() {
+                sinon.assert.calledWithMatch(chrome.browserAction.setBadgeText, {text: '!'});
+            });
+        });
+        done();
+    });
     //test '!' is removed after interactive auth
-    
+    it("should set badgeText to '' if authentication succeeds", function(done) {
+        page.open('empty.html', function() {
+            page.evalulate(function(auth) {
+                chrome.identity.getAuthToken.yields(JSON.parse(auth));
+                chrome.browserAction.getBadgeText.yields('!');
+            }, fs.read('data/chrome.identity.getAuthToken_good.json'));
+            page.injectJs('../src/eventPage.js');
+            page.evalulate(function() {
+                sinon.assert.calledWithMatch(chrome.browserAction.setBadgeText, {text: ''});
+            });
+        });
+        done();
+    });
     //test pullNotifications responds as expected to no new messages
     
     //test pullNotifications responds as expected with new messages
