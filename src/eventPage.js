@@ -26,19 +26,24 @@ function init() {
 }
 
 function syncStorage() {
-    chrome.runtime.onMessage.removeListener(messageHandler);
+    console.log("syncing storage...");
     chrome.storage.local.set({authenticated: authenticated,
         subscription: subscription
     });
+    console.log("globar var CONFIGURATION = ");
+    console.log(CONFIGURATION);
     chrome.storage.sync.get('CONFIGURATION', function(items) {
+        console.log("chrome.storage.sync.get returned: ");
+        console.log(items);
         if (typeof items != 'undefined') {
-        CONFIGURATION = items.CONFIGURATION;
+            console.log("Assiging sync CONFIGURATION to global var.")
+            CONFIGURATION = items.CONFIGURATION;
         }
         else {
+            console.log("Assiging global var to sync CONFIGURATION.")
             chrome.storage.sync.set({'CONFIGURATION': CONFIGURATION});
         }
     });
-    chrome.runtime.onMessage.addListener(messageHandler);
 }
 
 function authenticate(request, sendResponse) {
