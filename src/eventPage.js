@@ -35,7 +35,7 @@ function syncStorage() {
     chrome.storage.sync.get('CONFIGURATION', function(items) {
         console.log("chrome.storage.sync.get returned: ");
         console.log(items);
-        if (typeof items != 'undefined') {
+        if (typeof items.CONFIGURATION != 'undefined') {
             console.log("Assiging sync CONFIGURATION to global var.")
             CONFIGURATION = items.CONFIGURATION;
         }
