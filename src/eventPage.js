@@ -33,78 +33,79 @@ var subscription;
 
 function cleanUp(e) {
     'use strict';
-    console.log("cleanUp() called e =");
+    console.log('cleanUp() called e =');
     console.log(e);
     authorize();
     gapi.client.gmail.users.stop({
         userId: 'me'
-    }).then(function (response) {
-        console.log("gapi.client.gmail.users.stop returned:");
+    }).then(function(response) {
+        console.log('gapi.client.gmail.users.stop returned:');
         console.log(response);
-        chrome.storage.local.get('topic', function (topic) {
+        chrome.storage.local.get('topic', function(topic) {
             var topicName = topic.name;
             authorize();
             gapi.client.pubsub.projects.topics.delete({
                 topic: topicName
-            }).then(function (response) {
-                console.log("gapi.client.pubsub.projects.topics.delete returned:");
+            }).then(function(response) {
+                console.log('gapi.client.pubsub.projects.topics.delete' +
+                    ' returned:');
                 console.log(response);
             });
             authorize();
             gapi.client.pubsub.projects.subscriptions.delete({
                 subscription: subscription
-            }).then(function (response) {
-                console.log("gapi.client.pubsub.projects.subscriptions.delete returned:");
+            }).then(function(response) {
+                console.log('gapi.client.pubsub.projects.subscriptions.delete' +
+                    ' returned:');
                 console.log(response);
             });
         });
     });
 }
 
-window.addEventListener("beforeunload", cleanUp, false);
+window.addEventListener('beforeunload', cleanUp, false);
 
 function messageHandler(request, sender, sendResponse) {
     'use strict';
-    console.log("messageHandler received request:");
+    console.log('messageHandler received request:');
     console.log(request);
-    console.log("from:");
+    console.log('from:');
     console.log(sender);
     var action = request.action;
     switch (action) {
-    case "setConfig":
+    case 'setConfig':
         setConfig(request.config);
         sendResponse({
             action: request.action,
-            status: "completed"
+            status: 'completed'
         });
         break;
-    case "getConfig":
+    case 'getConfig':
         sendResponse({
             action: request.action,
-            status: "completed",
+            status: 'completed',
             config: CONFIGURATION
         });
         break;
-    case "getLabels":
+    case 'getLabels':
         getLabels(request, sendResponse);
-        //sendResponse({action: request.action, status: "completed", labels: labelList});
         break;
-    case "authenticate":
+    case 'authenticate':
         authenticate(request, sendResponse);
         break;
-    case "getAuthStatus":
+    case 'getAuthStatus':
         sendResponse({
             action: request.action,
-            status: "completed",
+            status: 'completed',
             authStatus: authenticated
         });
         break;
     default:
         sendResponse({
             action: request.action,
-            status: "Invalid request"
+            status: 'Invalid request'
         });
-        console.log("Unknown request <" + action + ">");
+        console.log('Unknown request <' + action + '>');
         break;
     }
 }
@@ -113,40 +114,47 @@ chrome.runtime.onMessage.addListener(messageHandler);
 
 function storageOnChangeHandler(changes, areaName) {
     'use strict';
-    console.log("storageOnChangeHandler called: areaname= " + areaName + " ,changes= ");
+    console.log('storageOnChangeHandler called: areaname= ' + areaName +
+        ' ,changes= ');
     console.log(changes);
     if (changes.authenticated !== 'undefined') {
-        console.log("Updated global variable authenticated to match the one in local storage.");
+        console.log('Updated global variable authenticated to match the one' +
+            ' in local storage.');
         console.log(authenticated);
         authenticated = changes.authenticated.newValue;
         var badgeText;
-        chrome.browserAction.getBadgeText({}, function (result) {
+        chrome.browserAction.getBadgeText({}, function(result) {
             badgeText = result;
         });
-        console.log("getBadgeText() returned:");
+        console.log('getBadgeText() returned:');
         console.log(badgeText);
         if (changes.authenticated.newValue === true && badgeText === '!') {
             chrome.browserAction.setBadgeText('');
         }
-        if (changes.authenticated.oldValue === false && changes.authenticated.newValue === true) {
+        if (changes.authenticated.oldValue === false &&
+        changes.authenticated.newValue === true) {
             loadApi();
         }
     }
     if (changes.CONFIGURATION !== 'undefined') {
-        console.log("Updated global variable CONFIGURATION to match the one in sync storage.");
+        console.log('Updated global variable CONFIGURATION to match the one' +
+            ' in sync storage.');
         console.log(CONFIGURATION);
         CONFIGURATION = changes.CONFIGURATION.newValue;
     }
     if (changes.subscription !== 'undefined') {
-        console.log("Updated global variable subscription to match the one in local storage.");
+        console.log('Updated global variable subscription to match the one' +
+            ' in local storage.');
         console.log(subscription);
         subscription = changes.subscription.newValue;
     }
 }
 
 chrome.storage.onChanged.addListener(storageOnChangeHandler);
-
-window.gapi_onload = function () {
+/**
+ * This is called when the Google API JS client is finished loading.
+ */
+window.gapi_onload = function() {
     'use strict';
     init();
 };
@@ -160,21 +168,21 @@ function init() {
 
 function syncStorage() {
     'use strict';
-    console.log("syncing storage...");
+    console.log('syncing storage...');
     chrome.storage.local.set({
         authenticated: authenticated,
         subscription: subscription
     });
-    console.log("globar var CONFIGURATION = ");
+    console.log('globar var CONFIGURATION = ');
     console.log(CONFIGURATION);
-    chrome.storage.sync.get('CONFIGURATION', function (items) {
-        console.log("chrome.storage.sync.get returned: ");
+    chrome.storage.sync.get('CONFIGURATION', function(items) {
+        console.log('chrome.storage.sync.get returned: ');
         console.log(items);
         if (items.CONFIGURATION !== 'undefined') {
-            console.log("Assiging sync CONFIGURATION to global var.");
+            console.log('Assiging sync CONFIGURATION to global var.');
             CONFIGURATION = items.CONFIGURATION;
         } else {
-            console.log("Assiging global var to sync CONFIGURATION.");
+            console.log('Assiging global var to sync CONFIGURATION.');
             chrome.storage.sync.set({
                 CONFIGURATION: CONFIGURATION
             });
@@ -187,24 +195,24 @@ function authenticate(request, sendResponse) {
     //oauth2 auth
     chrome.identity.getAuthToken({
         interactive: true
-    }, function (token) {
+    }, function(token) {
         if (token !== 'undefined') {
-            console.log("getAuthToken(interactive: true) successful.");
+            console.log('getAuthToken(interactive: true) successful.');
             chrome.storage.local.set({
                 authenticated: true
             });
             sendResponse({
                 action: request.action,
-                status: "completed"
+                status: 'completed'
             });
             gapi.auth.setToken({
                 access_token: token
             });
         } else {
-            console.log("getAuthToken(interactive: true) not successful.");
+            console.log('getAuthToken(interactive: true) not successful.');
             sendResponse({
                 action: request.action,
-                status: "failed"
+                status: 'failed'
             });
             chrome.browserAction.setBadgeText({
                 text: '!'
@@ -218,9 +226,9 @@ function authorize() {
     //oauth2 auth
     chrome.identity.getAuthToken({
         interactive: false
-    }, function (token) {
+    }, function(token) {
         if (token !== 'undefined') {
-            console.log("getAuthToken(interactive: false) successful.");
+            console.log('getAuthToken(interactive: false) successful.');
             chrome.storage.local.set({
                 authenticated: true
             });
@@ -228,7 +236,7 @@ function authorize() {
                 access_token: token
             });
         } else {
-            console.log("getAuthToken(interactive: false) not successful.");
+            console.log('getAuthToken(interactive: false) not successful.');
             chrome.storage.local.set({
                 authenticated: false
             });
@@ -241,15 +249,15 @@ function authorize() {
 
 function loadApi() {
     'use strict';
-    gapi.client.load('pubsub', 'v1', function () {
-        console.log("Google Cloud PubSub API loaded.");
+    gapi.client.load('pubsub', 'v1', function() {
+        console.log('Google Cloud PubSub API loaded.');
         gapi.client.load('gmail', 'v1', gmailAPILoaded);
     });
 }
 
 function gmailAPILoaded() {
     'use strict';
-    console.log("gmail api loaded.");
+    console.log('gmail api loaded.');
     authorize();
     gapi.client.gmail.users.getProfile({
         userId: 'me',
@@ -259,10 +267,10 @@ function gmailAPILoaded() {
 
 function cb_getUsersProfile_Success(response) {
     'use strict';
-    console.log("gapi.client.gmail.users.getProfile returned: ");
+    console.log('gapi.client.gmail.users.getProfile returned: ');
     console.log(response);
     var userID = response.result.emailAddress.replace('@', '');
-    var topicName = "projects/gmail-desktop-notifications/topics/" + userID;
+    var topicName = 'projects/gmail-desktop-notifications/topics/' + userID;
     authorize();
     gapi.client.pubsub.projects.topics.create({
         name: topicName
@@ -271,14 +279,14 @@ function cb_getUsersProfile_Success(response) {
 
 function cb_getUsersProfile_Error(response) {
     'use strict';
-    console.log("gapi.client.gmail.users.getProfile returned an error.");
+    console.log('gapi.client.gmail.users.getProfile returned an error.');
     console.log(response);
-    throw "gapi error in gapi.client.gmail.users.getProfile";
+    throw 'gapi error in gapi.client.gmail.users.getProfile';
 }
 
 function cb_pubsubCreateTopic_Success(response) {
     'use strict';
-    console.log("gapi.client.pubsub.projects.topics.create returned: ");
+    console.log('gapi.client.pubsub.projects.topics.create returned: ');
     console.log(response);
     var topic = response.result;
     chrome.storage.local.set({
@@ -286,24 +294,25 @@ function cb_pubsubCreateTopic_Success(response) {
     });
     //Subscribe to the topic.
     authorize();
-    var subname = topic.name.replace("/topics/", "/subscriptions/");
+    var subname = topic.name.replace('/topics/', '/subscriptions/');
     gapi.client.pubsub.projects.subscriptions.create({
         name: subname,
         topic: topic.name,
         ackDeadlineSeconds: 300
-    }).then(cb_pubsubCreateSubscription_Success, cb_pubsubCreateSubscription_Error);
+    }).then(cb_pubsubCreateSubscription_Success,
+    cb_pubsubCreateSubscription_Error);
 }
 
 function cb_pubsubCreateTopic_Error(response) {
     'use strict';
-    console.log("gapi.client.pubsub.projects.topics.create returned an error.");
+    console.log('gapi.client.pubsub.projects.topics.create returned an error.');
     console.log(response);
-    throw "gapi error in gapi.client.pubsub.projects.topics.create";
+    throw 'gapi error in gapi.client.pubsub.projects.topics.create';
 }
 
 function cb_pubsubCreateSubscription_Success(response) {
     'use strict';
-    console.log("gapi.client.pubsub.projects.subscriptions.create returned: ");
+    console.log('gapi.client.pubsub.projects.subscriptions.create returned: ');
     console.log(response);
     chrome.storage.local.set({
         subscription: response.result
@@ -315,28 +324,32 @@ function cb_pubsubCreateSubscription_Success(response) {
         resource: topicName,
         policy: {
             bindings: [{
-                role: "roles/pubsub.publisher",
-                members: ["serviceAccount:gmail-api-push@system.gserviceaccount.com"]
+                role: 'roles/pubsub.publisher',
+                members: [
+                    'serviceAccount:gmail-api-push@system.gserviceaccount.com'
+                ]
             }]
         }
-    }).then(cb_pubsubTopicsSetIamPolicy_Success, cb_pubsubTopicsSetIamPolicy_Error);
+    }).then(cb_pubsubTopicsSetIamPolicy_Success,
+    cb_pubsubTopicsSetIamPolicy_Error);
 }
 
 function cb_pubsubCreateSubscription_Error(response) {
     'use strict';
-    console.log("gapi.client.pubsub.projects.subscriptions.create returned an error.");
+    console.log('gapi.client.pubsub.projects.subscriptions.create returned' +
+        ' an error.');
     console.log(response);
-    throw "gapi error in gapi.client.pubsub.projects.subscriptions.create";
+    throw 'gapi error in gapi.client.pubsub.projects.subscriptions.create';
 }
 
 function cb_pubsubTopicsSetIamPolicy_Success(response) {
     'use strict';
-    console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned: ");
+    console.log('gapi.client.pubsub.projects.topics.setIamPolicy returned: ');
     console.log(response);
     var config;
-    chrome.storage.sync.get('CONFIGURATION', function (syncStorage) {
+    chrome.storage.sync.get('CONFIGURATION', function(syncStorage) {
         config = syncStorage.CONFIGURATION;
-        chrome.storage.local.get('topic', function (result) {
+        chrome.storage.local.get('topic', function(result) {
             var topicName = result.topic.name;
             //Tell api to publish notifications of new gmail messages to topic.
             authorize();
@@ -351,35 +364,36 @@ function cb_pubsubTopicsSetIamPolicy_Success(response) {
 
 function cb_pubsubTopicsSetIamPolicy_Error(response) {
     'use strict';
-    console.log("gapi.client.pubsub.projects.topics.setIamPolicy returned an error.");
+    console.log('gapi.client.pubsub.projects.topics.setIamPolicy returned' +
+        ' an error.');
     console.log(response);
-    throw "gapi error in gapi.client.pubsub.projects.topics.setIamPolicy";
+    throw 'gapi error in gapi.client.pubsub.projects.topics.setIamPolicy';
 }
 
 function cb_gmailWatch_Success(response) {
     'use strict';
-    console.log("gapi.client.gmail.users.watch returned: ");
+    console.log('gapi.client.gmail.users.watch returned: ');
     console.log(response);
     //poll topic every 30 seconds.
-    window.setInterval(function () {
+    window.setInterval(function() {
         pullNotifications();
     }, CONFIGURATION.pullInterval);
 }
 
 function cb_gmailWatch_Error(response) {
     'use strict';
-    console.log("gapi.client.gmail.users.watch returned an error.");
+    console.log('gapi.client.gmail.users.watch returned an error.');
     console.log(response);
-    throw "gapi error in gapi.client.gmail.users.watch";
+    throw 'gapi error in gapi.client.gmail.users.watch';
 }
 
 function pullNotifications() {
     'use strict';
     var notificationOptions = {
-        type: "basic",
-        title: "Gmail notification!",
-        message: "No new gmail messages found.",
-        contextMessage: "No messages found in monitored labels.",
+        type: 'basic',
+        title: 'Gmail notification!',
+        message: 'No new gmail messages found.',
+        contextMessage: 'No messages found in monitored labels.',
         isClickable: true
     };
     //var newMessages = false;
@@ -389,36 +403,41 @@ function pullNotifications() {
         'request body': {
             returnImmediately: true
         }
-    }).then(function (response) {
+    }).then(function(response) {
         if (response.data === 'undefined') {
-            console.log("no new messages found.");
+            console.log('no new messages found.');
             //for testing remove later:
             notificationOptions.isClickable = false;
-            chrome.notifications.create("no message", notificationOptions, function (notificationId) {
-                console.log("Creating no new messages notification notificationID:");
+            chrome.notifications.create('no message', notificationOptions,
+            function(notificationId) {
+                console.log('Creating no new messages notification' +
+                    ' notificationID:');
                 console.log(notificationId);
             });
             return;
         }
         var decodedData = atob(response.data);
-        //get message count if possible and display on badgetext and in notification
-        console.log("decodedData from pull request = " + decodedData);
-        console.log("option attributes from pull request = ");
+//get message count if possible and display on badgetext and in notification
+        console.log('decodedData from pull request = ' + decodedData);
+        console.log('option attributes from pull request = ');
         console.log(response.attributes);
-        notificationOptions.message = "New gmail messages!";
-        notificationOptions.contextMessage = "New messages found in monitored labels.";
-        var notificationClickedCallback = function (notificationId) {
-            console.log("Creating new messages notification notificationID:");
+        notificationOptions.message = 'New gmail messages!';
+        notificationOptions.contextMessage =
+            'New messages found in monitored labels.';
+        var notificationClickedCallback = function(notificationId) {
+            console.log('Creating new messages notification notificationID:');
             console.log(notificationId);
             var createProperties = {
-                url: "https://gmail.com"
+                url: 'https://gmail.com'
             };
             chrome.tabs.create(createProperties);
-            chrome.notifications.onClicked.removeListener(notificationClickedCallback);
+            chrome.notifications.onClicked.removeListener(
+                notificationClickedCallback);
         };
         chrome.notifications.onClicked.addListener(notificationClickedCallback);
-        chrome.notifications.create(response.messageId, notificationOptions, function (notificationId) {
-            console.log("Creating notification notificationID:");
+        chrome.notifications.create(response.messageId, notificationOptions,
+        function(notificationId) {
+            console.log('Creating notification notificationID:');
             console.log(notificationId);
             //DO STUFF
         });
@@ -431,13 +450,13 @@ function getLabels(request, sendResponse) {
     authorize();
     gapi.client.gmail.users.labels.list({
         userId: 'me'
-    }).then(function (response) {
-        console.log("gapi.client.gmail.users.labels.list returned:");
+    }).then(function(response) {
+        console.log('gapi.client.gmail.users.labels.list returned:');
         console.log(response);
-        labelList = response.result.labels; //this may need to be parsed further.
+        labelList = response.result.labels; //this may need to be parsed further
         sendResponse({
             action: request.action,
-            status: "completed",
+            status: 'completed',
             labels: labelList
         });
     });
