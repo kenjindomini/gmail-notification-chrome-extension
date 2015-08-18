@@ -19,27 +19,34 @@ var CONFIGURATION = {
         'CATEGORY_UPDATES'
     ]
 };
-var labelList;
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
     document.querySelector('#submitConfig').addEventListener('click',
         setConfig);
     var authStatus = getAuthStatus();
+    console.log("getAuthStatus returned with " + authStatus);
     getConfig();
     if (authStatus === true) {
-        getLabels();
-        createLabelList();
+        getLabels().then(function(response) {
+            console.log("getLabels() returned: ");
+            console.log(response);
+            createLabelList(response.labelList);
+        });
     }
 });
 
 function getLabels() {
     'use strict';
-    chrome.runtime.sendMessage({action: 'getLabels'}, function(response) {
-        console.log('chrome.runtime.sendMessage({action: "getLabels"})' +
-            ' returned:');
-        console.log(response);
-        labelList = response.labels;
+    var p = new Promise(function(resolve) {
+        chrome.runtime.sendMessage({action: 'getLabels'}, function(response) {
+            console.log('chrome.runtime.sendMessage({action: "getLabels"})' +
+                ' returned:');
+            console.log(response);
+            var labelList = response.labels;
+            resolve(labelList);
+        });
     });
+    return p;
 }
 
 function authorize() {
@@ -53,8 +60,11 @@ function authorize() {
             while (authorizeDiv.firstChild) {
                 authorizeDiv.removeChild(authorizeDiv.firstChild);
             }
-            getLabels();
-            createLabelList();
+            getLabels().then(function(response) {
+            console.log("getLabels() returned: ");
+            console.log(response);
+            createLabelList(response.labelList);
+            });
         } else {
             var authorizeText = document.getElementById('authorizeText');
             authorizeText.textContent = 'Authorization was canceled or' +
@@ -99,7 +109,7 @@ function getAuthStatus() {
     });
 }
 
-function createLabelList() {
+function createLabelList(labelList) {
     'use strict';
     var labelListDiv = document.getElementById('labelList');
     labelList.foreach(function(currentValue, index, array) {
