@@ -29,7 +29,6 @@ var CONFIGURATION = {
         'CATEGORY_UPDATES'
     ]
 };
-var subscription;
 
 function cleanUp(e) {
     'use strict';
@@ -52,6 +51,7 @@ function cleanUp(e) {
                 console.log(response);
             });
             authorize();
+            var subscription;
             gapi.client.pubsub.projects.subscriptions.delete({
                 subscription: subscription
             }).then(function(response) {
@@ -117,7 +117,7 @@ function storageOnChangeHandler(changes, areaName) {
     console.log('storageOnChangeHandler called: areaname= ' + areaName +
         ' ,changes= ');
     console.log(changes);
-    if (changes.authenticated !== 'undefined') {
+    if (typeof changes.authenticated !== 'undefined') {
         console.log('Updated global variable authenticated to match the one' +
             ' in local storage.');
         console.log(authenticated);
@@ -136,17 +136,11 @@ function storageOnChangeHandler(changes, areaName) {
             loadApi();
         }
     }
-    if (changes.CONFIGURATION !== 'undefined') {
+    if (typeof changes.CONFIGURATION !== 'undefined') {
         console.log('Updated global variable CONFIGURATION to match the one' +
             ' in sync storage.');
         console.log(CONFIGURATION);
         CONFIGURATION = changes.CONFIGURATION.newValue;
-    }
-    if (changes.subscription !== 'undefined') {
-        console.log('Updated global variable subscription to match the one' +
-            ' in local storage.');
-        console.log(subscription);
-        subscription = changes.subscription.newValue;
     }
 }
 
@@ -170,15 +164,14 @@ function syncStorage() {
     'use strict';
     console.log('syncing storage...');
     chrome.storage.local.set({
-        authenticated: authenticated,
-        subscription: subscription
+        authenticated: authenticated
     });
     console.log('globar var CONFIGURATION = ');
     console.log(CONFIGURATION);
     chrome.storage.sync.get('CONFIGURATION', function(items) {
         console.log('chrome.storage.sync.get returned: ');
         console.log(items);
-        if (items.CONFIGURATION !== 'undefined') {
+        if (typeof items.CONFIGURATION !== 'undefined') {
             console.log('Assiging sync CONFIGURATION to global var.');
             CONFIGURATION = items.CONFIGURATION;
         } else {
@@ -196,7 +189,7 @@ function authenticate(request, sendResponse) {
     chrome.identity.getAuthToken({
         interactive: true
     }, function(token) {
-        if (token !== 'undefined') {
+        if (typeof token !== 'undefined') {
             console.log('getAuthToken(interactive: true) successful.');
             chrome.storage.local.set({
                 authenticated: true
@@ -227,7 +220,7 @@ function authorize() {
     chrome.identity.getAuthToken({
         interactive: false
     }, function(token) {
-        if (token !== 'undefined') {
+        if (typeof token !== 'undefined') {
             console.log('getAuthToken(interactive: false) successful.');
             chrome.storage.local.set({
                 authenticated: true
@@ -262,7 +255,8 @@ function gmailAPILoaded() {
     gapi.client.gmail.users.getProfile({
         userId: 'me',
         fields: 'emailAddress'
-    }).then(cb_getUsersProfile_Success, cb_getUsersProfile_Error);
+    }).then(cb_getUsersProfile_Success)
+    .catch(cb_getUsersProfile_Error);
 }
 
 function cb_getUsersProfile_Success(response) {
@@ -274,7 +268,8 @@ function cb_getUsersProfile_Success(response) {
     authorize();
     gapi.client.pubsub.projects.topics.create({
         name: topicName
-    }).then(cb_pubsubCreateTopic_Success, cb_pubsubCreateTopic_Error);
+    }).then(cb_pubsubCreateTopic_Success)
+    .catch(cb_pubsubCreateTopic_Error);
 }
 
 function cb_getUsersProfile_Error(response) {
@@ -299,8 +294,8 @@ function cb_pubsubCreateTopic_Success(response) {
         name: subname,
         topic: topic.name,
         ackDeadlineSeconds: 300
-    }).then(cb_pubsubCreateSubscription_Success,
-    cb_pubsubCreateSubscription_Error);
+    }).then(cb_pubsubCreateSubscription_Success)
+    .catch(cb_pubsubCreateSubscription_Error);
 }
 
 function cb_pubsubCreateTopic_Error(response) {
@@ -330,8 +325,8 @@ function cb_pubsubCreateSubscription_Success(response) {
                 ]
             }]
         }
-    }).then(cb_pubsubTopicsSetIamPolicy_Success,
-    cb_pubsubTopicsSetIamPolicy_Error);
+    }).then(cb_pubsubTopicsSetIamPolicy_Success)
+    .catch(cb_pubsubTopicsSetIamPolicy_Error);
 }
 
 function cb_pubsubCreateSubscription_Error(response) {
@@ -357,7 +352,8 @@ function cb_pubsubTopicsSetIamPolicy_Success(response) {
                 userId: 'me',
                 topicName: topicName,
                 labelIds: config.monitorLabels
-            }).then(cb_gmailWatch_Success, cb_gmailWatch_Error);
+            }).then(cb_gmailWatch_Success)
+            .catch(cb_gmailWatch_Error);
         });
     });
 }
@@ -398,7 +394,10 @@ function pullNotifications() {
     };
     //var newMessages = false;
     authorize();
-    gapi.client.pubsub.projects.subscriptions.pull({
+    chrome.storage.local.get('subscription', function(result) {
+        var subscription;
+        subscription = result.subscription;
+        gapi.client.pubsub.projects.subscriptions.pull({
         subscription: subscription.name,
         'request body': {
             returnImmediately: true
@@ -442,6 +441,7 @@ function pullNotifications() {
             //DO STUFF
         });
     });
+    });
 }
 
 function getLabels(request, sendResponse) {
@@ -458,6 +458,12 @@ function getLabels(request, sendResponse) {
             action: request.action,
             status: 'completed',
             labels: labelList
+        })
+        .catch(function(reason) {
+            'use strict';
+        console.log('gapi.client.gmail.users.labels.list returned an error.');
+        console.log(reason);
+        throw 'gapi error in gapi.client.gmail.users.labels.list';
         });
     });
     //return labelList;
@@ -465,12 +471,12 @@ function getLabels(request, sendResponse) {
 
 function setConfig(config) {
     'use strict';
-    if (config.pullInterval !== 'undefined') {
+    if (typeof config.pullInterval !== 'undefined') {
         chrome.storage.sync.set({
             'CONFIGURATION.pullInterval': config.pullInterval
         });
     }
-    if (config.monitorLabels !== 'undefined') {
+    if (typeof config.monitorLabels !== 'undefined') {
         chrome.storage.sync.set({
             'CONFIGURATION.monitorLabels': config.monitorLabels
         });
