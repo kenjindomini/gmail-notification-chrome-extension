@@ -19,20 +19,31 @@ var CONFIGURATION = {
         'CATEGORY_UPDATES'
     ]
 };
+//actions to be taken as soon as the DOM is loaded.
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
+    //when submit is clicked call setConfig()
     document.querySelector('#submitConfig').addEventListener('click',
         setConfig);
-    var authStatus = getAuthStatus();
-    console.log("getAuthStatus returned with " + authStatus);
-    getConfig();
-    if (authStatus === true) {
-        getLabels().then(function(response) {
-            console.log("getLabels() returned: ");
+    //Call to the eventPage to check if we are authorized
+    getAuthStatus().then(function(response) {
+        var authStatus = response.authStatus;
+        console.log('getAuthStatus returned with ' + authStatus);
+        //get the running configuration from the eventPage.
+        getConfig().then(function(response) {
+            console.log('getConfig() returned with: ');
             console.log(response);
-            createLabelList(response.labelList);
+            if (authStatus === true) {
+                //get list of all gmail labels from the eventPage.
+                getLabels().then(function(response) {
+                console.log('getLabels() returned: ');
+                console.log(response);
+                //pass the list of all labels to generate a list of checkboxes
+                createLabelList(response.labelList);
+                });
+            }
         });
-    }
+    });
 });
 
 function getLabels() {
@@ -61,7 +72,7 @@ function authorize() {
                 authorizeDiv.removeChild(authorizeDiv.firstChild);
             }
             getLabels().then(function(response) {
-            console.log("getLabels() returned: ");
+            console.log('getLabels() returned: ');
             console.log(response);
             createLabelList(response.labelList);
             });
@@ -75,14 +86,18 @@ function authorize() {
 
 function getConfig() {
     'use strict';
-    chrome.runtime.sendMessage({action: 'getConfig'}, function(response) {
-        console.log('chrome.runtime.sendMessage({action: "getConfig"})' +
-            ' returned:');
-        console.log(response);
-        CONFIGURATION = response.config;
+    var p = new Promise(function(resolve) {
+        chrome.runtime.sendMessage({action: 'getConfig'}, function(response) {
+            console.log('chrome.runtime.sendMessage({action: "getConfig"})' +
+                ' returned:');
+            console.log(response);
+            CONFIGURATION = response.config;
+            resolve(CONFIGURATION);
+        });
+        var pullIntervalTextInput = document.getElementById('pullInterval');
+        pullIntervalTextInput.value = CONFIGURATION.pullInterval;
     });
-    var pullIntervalTextInput = document.getElementById('pullInterval');
-    pullIntervalTextInput.value = CONFIGURATION.pullInterval;
+    return p;
 }
 
 function setConfig() {
@@ -98,15 +113,19 @@ function setConfig() {
 
 function getAuthStatus() {
     'use strict';
-    chrome.runtime.sendMessage({action: 'getAuthStatus'}, function(response) {
-        console.log('chrome.runtime.sendMessage({action: "getAuthStatus"})' +
-            ' returned:');
-        console.log(response);
-        if (response.authStatus === false) {
-            createAuthorizeButton();
-        }
-        return response.authStatus;
+    var p = new Promise(function(resolve) {
+        chrome.runtime.sendMessage({action: 'getAuthStatus'},
+        function(response) {
+            console.log('chrome.runtime.sendMessage(' +
+                '{action: "getAuthStatus"}) returned:');
+            console.log(response);
+            if (response.authStatus === false) {
+                createAuthorizeButton();
+            }
+            resolve(response.authStatus);
+        });
     });
+    return p;
 }
 
 function createLabelList(labelList) {
