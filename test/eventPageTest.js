@@ -1,6 +1,9 @@
-//var vm = require("vm");
+/*global
+    describe, it, page, CONFIGURATION
+*/
 var fs = require("fs");
 var chrome = require("sinon-chrome");
+var sinon = require("sinon");
 var expect = require('chai').expect;
 
 describe('event page', function() {
@@ -50,7 +53,8 @@ describe('event page', function() {
             }, fs.read('data/chrome.identity.getAuthToken_bad.json'));
             page.injectJs('../src/eventPage.js');
             page.evalulate(function() {
-                sinon.assert.calledWithMatch(chrome.browserAction.setBadgeText, {text: '!'});
+                sinon.assert.calledWithMatch(chrome.browserAction.setBadgeText,
+                {text: '!'});
             });
         });
         done();
@@ -64,17 +68,39 @@ describe('event page', function() {
             }, fs.read('data/chrome.identity.getAuthToken_good.json'));
             page.injectJs('../src/eventPage.js');
             page.evalulate(function() {
-                sinon.assert.calledWithMatch(chrome.browserAction.setBadgeText, {text: ''});
+                sinon.assert.calledWithMatch(chrome.browserAction.setBadgeText,
+                {text: ''});
             });
         });
         done();
     });
-    //test pullNotifications responds as expected to no new messages
-    
-    //test pullNotifications responds as expected with new messages
     
     //TODO: figure out how to test message handler
     ////will involve testing setConfig and getLabels
     
     //stub and test gapi calls.
+    
+    //test pullNotifications responds as expected to no new messages
+    /*it("should log 'no new messages' when there are no messages in the" +
+    " subscription", function(done) {
+        var subscriptionPull = sinon.stub(gapi.client.pubsub.projects.subscriptions, "pull");
+        sinon.spy(console, "log");
+        page.open('empty.html', function() {
+            page.evalulate(function(pull) {
+                subscriptionPull.yields(JSON.parse(pull));
+            }, fs.read('data/gapi.client.pubsub.projects.subscriptions.pull_noMessages.json'));
+            page.evalulate(function(storageGet){
+                chrome.storage.sync.get.withArgs(['subscription',
+                'mailboxHistoryId']).yields(storageGet);
+            }, fs.read('data/chrome.storage.sync.get-pull_noNew.json'));
+            page.injectJs('../src/eventPage.js');
+            page.evalulate(function() {
+                pullNotifications();
+                sinon.assert.calledWithMatch(console.log, 'no new messages found.');
+            });
+        });
+        done();
+    });*/
+    
+    //test pullNotifications responds as expected with new messages
 });
