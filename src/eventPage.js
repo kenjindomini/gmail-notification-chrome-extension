@@ -341,6 +341,19 @@ function cb_pubsubTopicsSetIamPolicy_Success(response) {
     'use strict';
     console.log('gapi.client.pubsub.projects.topics.setIamPolicy returned: ');
     console.log(response);
+    gmailWatch();
+}
+
+function cb_pubsubTopicsSetIamPolicy_Error(response) {
+    'use strict';
+    console.log('gapi.client.pubsub.projects.topics.setIamPolicy returned' +
+        ' an error.');
+    console.log(response);
+    throw 'gapi error in gapi.client.pubsub.projects.topics.setIamPolicy';
+}
+
+function gmailWatch() {
+    'use strict';
     var config;
     chrome.storage.sync.get('CONFIGURATION', function(syncStorage) {
         config = syncStorage.CONFIGURATION;
@@ -358,22 +371,20 @@ function cb_pubsubTopicsSetIamPolicy_Success(response) {
     });
 }
 
-function cb_pubsubTopicsSetIamPolicy_Error(response) {
-    'use strict';
-    console.log('gapi.client.pubsub.projects.topics.setIamPolicy returned' +
-        ' an error.');
-    console.log(response);
-    throw 'gapi error in gapi.client.pubsub.projects.topics.setIamPolicy';
-}
-
 function cb_gmailWatch_Success(response) {
     'use strict';
     console.log('gapi.client.gmail.users.watch returned: ');
     console.log(response);
+    //call watch again before expiration
+    var expiration = response.result.expiration - 100;
+    window.setInterval(gmailWatch, expiration - Date.now());
+    chrome.storage.local.set({mailboxHistoryId: response.result.historyId});
     //poll topic every 30 seconds.
-    window.setInterval(function() {
+    chrome.storage.sync.get('CONFIGURATION', function(result){
+        window.setInterval(function() {
         pullNotifications();
-    }, CONFIGURATION.pullInterval);
+    }, result.CONFIGURATION.pullInterval);
+    });
 }
 
 function cb_gmailWatch_Error(response) {
@@ -394,16 +405,18 @@ function pullNotifications() {
     };
     //var newMessages = false;
     authorize();
-    chrome.storage.local.get('subscription', function(result) {
-        var subscription;
-        subscription = result.subscription;
+    var valuesToGetFromStorage = [
+        'subscription',
+        'mailboxHistoryId'
+        ];
+    chrome.storage.local.get(valuesToGetFromStorage, function(result) {
+        var subscription = result.subscription;
+        //var previousHistoryId = result.mailboxHistoryId;
         gapi.client.pubsub.projects.subscriptions.pull({
         subscription: subscription.name,
-        'request body': {
-            returnImmediately: true
-        }
+        returnImmediately: true
     }).then(function(response) {
-        if (response.data === 'undefined') {
+        if (typeof response.data === 'undefined') {
             console.log('no new messages found.');
             //for testing remove later:
             notificationOptions.isClickable = false;
