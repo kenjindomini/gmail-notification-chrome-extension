@@ -1,5 +1,5 @@
 /*global
-    describe, it, page, CONFIGURATION
+    describe, it, page, CONFIGURATION, gapi, pullNotifications
 */
 var fs = require("fs");
 var chrome = require("sinon-chrome");
@@ -81,11 +81,12 @@ describe('event page', function() {
     //stub and test gapi calls.
     
     //test pullNotifications responds as expected to no new messages
-    /*it("should log 'no new messages' when there are no messages in the" +
+    it("should log 'no new messages' when there are no messages in the" +
     " subscription", function(done) {
-        var subscriptionPull = sinon.stub(gapi.client.pubsub.projects.subscriptions, "pull");
         sinon.spy(console, "log");
         page.open('empty.html', function() {
+            page.injectJs('../src/eventPage.js');
+            var subscriptionPull = sinon.stub(gapi.client.pubsub.projects.subscriptions, "pull");
             page.evalulate(function(pull) {
                 subscriptionPull.yields(JSON.parse(pull));
             }, fs.read('data/gapi.client.pubsub.projects.subscriptions.pull_noMessages.json'));
@@ -93,14 +94,13 @@ describe('event page', function() {
                 chrome.storage.sync.get.withArgs(['subscription',
                 'mailboxHistoryId']).yields(storageGet);
             }, fs.read('data/chrome.storage.sync.get-pull_noNew.json'));
-            page.injectJs('../src/eventPage.js');
             page.evalulate(function() {
                 pullNotifications();
                 sinon.assert.calledWithMatch(console.log, 'no new messages found.');
             });
         });
         done();
-    });*/
+    });
     
     //test pullNotifications responds as expected with new messages
 });
