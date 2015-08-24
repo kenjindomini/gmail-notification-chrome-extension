@@ -146,7 +146,9 @@ function storageOnChangeHandler(changes, areaName) {
 
 chrome.storage.onChanged.addListener(storageOnChangeHandler);
 /**
- * This is called when the Google API JS client is finished loading.
+ * This is called when the Google API JS client is finished loading. this is
+ * done by chrome. The manifest lists this script then gapi-client.js, so they
+ * are loaded in that order.
  */
 window.gapi_onload = function() {
     'use strict';
