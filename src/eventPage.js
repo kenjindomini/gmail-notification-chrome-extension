@@ -257,8 +257,7 @@ function gmailAPILoaded() {
     gapi.client.gmail.users.getProfile({
         userId: 'me',
         fields: 'emailAddress'
-    }).then(cb_getUsersProfile_Success)
-    .catch(cb_getUsersProfile_Error);
+    }).then(cb_getUsersProfile_Success, cb_getUsersProfile_Error);
 }
 
 function cb_getUsersProfile_Success(response) {
@@ -270,8 +269,7 @@ function cb_getUsersProfile_Success(response) {
     authorize();
     gapi.client.pubsub.projects.topics.create({
         name: topicName
-    }).then(cb_pubsubCreateTopic_Success)
-    .catch(cb_pubsubCreateTopic_Error);
+    }).then(cb_pubsubCreateTopic_Success,cb_pubsubCreateTopic_Error);
 }
 
 function cb_getUsersProfile_Error(response) {
@@ -296,8 +294,8 @@ function cb_pubsubCreateTopic_Success(response) {
         name: subname,
         topic: topic.name,
         ackDeadlineSeconds: 300
-    }).then(cb_pubsubCreateSubscription_Success)
-    .catch(cb_pubsubCreateSubscription_Error);
+    }).then(cb_pubsubCreateSubscription_Success,
+    cb_pubsubCreateSubscription_Error);
 }
 
 function cb_pubsubCreateTopic_Error(response) {
@@ -327,8 +325,8 @@ function cb_pubsubCreateSubscription_Success(response) {
                 ]
             }]
         }
-    }).then(cb_pubsubTopicsSetIamPolicy_Success)
-    .catch(cb_pubsubTopicsSetIamPolicy_Error);
+    }).then(cb_pubsubTopicsSetIamPolicy_Success,
+    cb_pubsubTopicsSetIamPolicy_Error);
 }
 
 function cb_pubsubCreateSubscription_Error(response) {
@@ -367,8 +365,7 @@ function gmailWatch() {
                 userId: 'me',
                 topicName: topicName,
                 labelIds: config.monitorLabels
-            }).then(cb_gmailWatch_Success)
-            .catch(cb_gmailWatch_Error);
+            }).then(cb_gmailWatch_Success, cb_gmailWatch_Error);
         });
     });
 }
@@ -416,9 +413,10 @@ function pullNotifications() {
         //var previousHistoryId = result.mailboxHistoryId;
         gapi.client.pubsub.projects.subscriptions.pull({
         subscription: subscription.name,
-        returnImmediately: true
+        returnImmediately: true,
+        maxMessages: 10
     }).then(function(response) {
-        if (typeof response.data === 'undefined') {
+        if (response.result.receivedMessages.length === 0) {
             console.log('no new messages found.');
             //for testing remove later:
             notificationOptions.isClickable = false;
@@ -473,9 +471,10 @@ function getLabels(request, sendResponse) {
             action: request.action,
             status: 'completed',
             labels: labelList
-        })
-        .catch(function(reason) {
+        },
+        function(reason) {
             'use strict';
+            //gapi.client.gmail.users.labels.list onError function
         console.log('gapi.client.gmail.users.labels.list returned an error.');
         console.log(reason);
         throw 'gapi error in gapi.client.gmail.users.labels.list';
