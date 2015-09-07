@@ -416,7 +416,10 @@ function pullNotifications() {
         returnImmediately: true,
         maxMessages: 10
     }).then(function(response) {
-        if (response.result.receivedMessages.length === 0) {
+        console.log("gapi.client.pubsub.projects.subscriptions.pull response:");
+        console.log(response);
+        var receivedMessages = response.result.receivedMessages;
+        if (receivedMessages.length === 0) {
             console.log('no new messages found.');
             //for testing remove later:
             notificationOptions.isClickable = false;
@@ -428,7 +431,7 @@ function pullNotifications() {
             });
             return;
         }
-        var decodedData = atob(response.data);
+        var decodedData = atob(receivedMessages[1].data);
 //get message count if possible and display on badgetext and in notification
         console.log('decodedData from pull request = ' + decodedData);
         console.log('option attributes from pull request = ');
